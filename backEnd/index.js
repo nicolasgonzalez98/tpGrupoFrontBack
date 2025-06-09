@@ -7,6 +7,7 @@ const connectDB = require('./database/connection');
 app.use(express.json());
 connectDB();
 
+
 // Ruta de ejemplo
 app.get('/', (req, res) => {
   res.send('¡Hola desde el backend con Express!');
