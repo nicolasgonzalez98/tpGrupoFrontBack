@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "mongoose": "^8.15.1"
   },
   "name": "backend",
   "version": "1.0.0",
