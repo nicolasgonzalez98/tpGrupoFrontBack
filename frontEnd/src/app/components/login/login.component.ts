@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../../services/authService';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,7 @@ export class LoginComponent{
       errorMessage = '';
       successMessage = '';
 
-      constructor(private fb: FormBuilder,  private authService: AuthService) {}
+      constructor(private fb: FormBuilder,  private authService: AuthService, private router:Router) {}
 
       ngOnInit(): void {
         this.loginForm = this.fb.group({
@@ -42,9 +43,10 @@ export class LoginComponent{
 
         try{
             const res = await this.authService.login(this.loginForm.value);
-            this.successMessage = '¡Bienvenido!';
           
             localStorage.setItem('token', res.token);
+            
+            this.router.navigate([""])
             
         }catch (err: any) {
             this.errorMessage = err.message || 'Credenciales incorrectas';
