@@ -1,0 +1,2 @@
+//prueba de metodo GET para ver listado de usuarios
+GET http://127.0.0.1:3000/api/usuarios HTTP/1.1

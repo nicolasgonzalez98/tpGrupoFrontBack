@@ -5,12 +5,15 @@ const port = 3000;
 const connectDB = require('./database/connection');
 const authRoutes = require('./routes/authRoutes');
 
+const usuarioRouter = require('./routers/UsuarioRouter'); 
 
 app.use(cors());
 app.use(express.json());
 connectDB();
 
+
 app.use('/api/auth', authRoutes);
+app.use('/api/usuarios', usuarioRouter);
 
 // Ruta de ejemplo
 app.get('/', (req, res) => {
