@@ -4,11 +4,12 @@ import { LayoutComponent } from "./layout/layout.component";
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/authService';
 import { CommonModule } from '@angular/common';
+import { NavbarComponent } from "./navbar/navbar.component";
 
 
 @Component({
   selector: 'app-root',
-  imports: [LayoutComponent, CommonModule],
+  imports: [LayoutComponent, CommonModule, NavbarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

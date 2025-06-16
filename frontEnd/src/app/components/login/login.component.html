@@ -17,6 +17,11 @@
                 <div class="text-red-500" *ngIf="password.invalid && password.touched">Contraseña requerida</div>
             </div>
 
+            <div class="mb-2">
+                <p *ngIf="errorMessage" class="text-red-500">{{ errorMessage }}</p>
+                <p *ngIf="successMessage" class="text-green-500">{{ successMessage }}</p>
+            </div>
+            
             <button pButton type="submit">Iniciar sesión</button>
         </form>
 

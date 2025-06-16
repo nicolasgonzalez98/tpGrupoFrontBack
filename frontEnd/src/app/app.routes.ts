@@ -19,7 +19,8 @@ export const routes: Routes = [
     children: [
       { path: '', component: StockComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
-      { path: 'login', component: LoginComponent, canActivate: [GuestGuard]}
+      { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
+      { path:'**', redirectTo:''}
     ]
   }
 ];

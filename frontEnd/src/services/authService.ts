@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import axios from 'axios';
 import { BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { IUsuario } from '../app/models/usuario.models';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ export class AuthService {
     private apiUrl = 'http://localhost:3000/api/auth';
 
     private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
-    private userSubject = new BehaviorSubject<any>(this.getUserFromStorage());
+    private userSubject = new BehaviorSubject<IUsuario | null>(this.getUserFromStorage());
 
     isLoggedIn$ = this.isLoggedInSubject.asObservable();
     user$ = this.userSubject.asObservable();
@@ -23,34 +24,36 @@ export class AuthService {
         return token !== null && token !== '';
     }
 
-    private getUserFromStorage() {
+    private getUserFromStorage(): IUsuario | null {
         const user = localStorage.getItem('user');
-        return user ? JSON.parse(user) : null;
+        return user ? JSON.parse(user) as IUsuario : null;
     }
 
-    async register(data: { nombre: string; email: string; password: string }): Promise<any> {
-        try{
+    async register(data: { nombre: string; email: string; password: string }): Promise<{ message: string; user: IUsuario }> {
+        try {
             const response = await axios.post(`${this.apiUrl}/register`, data);
             return response.data;
-        }catch (error: any) {
+        } catch (error: any) {
             throw error.response?.data || { message: 'Error de red o desconocido' };
         }
     }
 
-    async login(data: { email: string; password: string }): Promise<any> {
-        try{
-            const response = await axios.post(`${this.apiUrl}/login`, data);
+    async login(data: { email: string; password: string }): Promise<{ message: string; token: string; user: IUsuario }> {
+        try {
+                const response = await axios.post(`${this.apiUrl}/login`, data);
 
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+                const user: IUsuario = response.data.user;
 
-            this.isLoggedInSubject.next(true);
-            this.userSubject.next(response.data.user);
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('user', JSON.stringify(user));
 
-            return response.data;
-        }catch (error: any) {
-            throw error.response?.data || { message: 'Error de red o desconocido' };
-        }
+                this.isLoggedInSubject.next(true);
+                this.userSubject.next(user);
+
+                return response.data;
+            } catch (error: any) {
+                throw error.response?.data || { message: 'Error de red o desconocido' };
+            }
     }
 
     logout() {
@@ -65,7 +68,7 @@ export class AuthService {
         return localStorage.getItem('token');
     }
 
-    getUser() {
+    getUser(): IUsuario | null {
         return this.userSubject.value;
     }
 }
