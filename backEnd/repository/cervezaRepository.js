@@ -5,11 +5,15 @@ const createCerveza = async (cervezaData) => {
   return await cerveza.save();
 };
 
-const findCervezaById = async (id) => {
+const getAllCervezas = async () => {
+  return await Cerveza.find().populate('cerveza_id').exec();
+}
+
+const getCervezaById = async (id) => {
   return await Cerveza.findOne({ id });
 };
 
-const findCervezaByName = async (nombre) => {
+const getCervezaByName = async (nombre) => {
   return await Cerveza.findOne({ nombre });
 };
 
@@ -17,7 +21,6 @@ const deleteCervezaById = async (id) => {
   return await Cerveza.findByIdAndDelete(id);
 };
 
-//TODO: validacion de stock y cantidad a descontar < 0 pasar al service
 const updateStockCerveza = async (id, cantidad) => {
   const cerveza = await Cerveza.findById(id);
   if (!cerveza) return null;
@@ -36,11 +39,11 @@ const updateStockCerveza = async (id, cantidad) => {
 };
 
 
-
 module.exports = {
   createCerveza,
-  findCervezaById,
-  findCervezaByName,
+  getCervezaById,
+  getCervezaByName,
+  getAllCervezas,
   deleteCervezaById,
   updateStockCerveza
 };
