@@ -4,7 +4,9 @@ import { LayoutComponent } from './layout/layout.component';
 import { AppComponent } from './app.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LoginComponent } from './components/login/login.component';
-// Ejemplo si tenés una página Home
+import { AdminHomeComponent } from '../app/components/admin/admin.component';
+import { AdminDashboardComponent } from '../app/components/admin-dashboard/admin-dashboard.component';
+
 
 
 export const routes: Routes = [
@@ -13,8 +15,11 @@ export const routes: Routes = [
     component: LayoutComponent,
     children: [
       { path: '', component: AppComponent },
-      { path: 'register', component: RegisterComponent},
-      { path: 'login', component: LoginComponent}
+      { path: 'register', component: RegisterComponent },
+      { path: 'login', component: LoginComponent },
+      { path: 'admin', component: AdminHomeComponent }, 
+      { path: 'admin/usuarios', component: AdminDashboardComponent }
+
     ]
   }
 ];
@@ -23,5 +28,5 @@ export const routes: Routes = [
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }
 
