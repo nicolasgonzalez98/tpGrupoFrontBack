@@ -6,7 +6,7 @@ const createCerveza = async (cervezaData) => {
 };
 
 const getAllCervezas = async () => {
-  return await Cerveza.find().populate('cerveza_id').exec();
+  return await Cerveza.find();
 }
 
 const getCervezaById = async (id) => {
