@@ -23,10 +23,10 @@ export const routes: Routes = [
       { path: '', component: StockComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
-      { path:'**', redirectTo:''},
       { path: "stock", component: CervezasComponent},
       { path: 'stock/editarCerveza/:id', component: CervezaFormComponent},
-      { path: 'stock/crearCerveza',component: CervezaFormComponent }
+      { path: 'stock/crearCerveza',component: CervezaFormComponent },
+      { path:'**', redirectTo:''},
     ]
   }
 ];
