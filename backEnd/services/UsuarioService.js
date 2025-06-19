@@ -7,10 +7,18 @@ exports.getAllUsuariosService = async () => {
         return usuarios; 
     } catch (error) {
         console.error("Error en getAllUsuariosService:", error);
-        // Propaga el error para que el controlador lo maneje
         throw new Error("Error en la capa de servicio al obtener usuarios: " + error.message);
     }
 };
 
+exports.updateUsuarioService = async (id, updateData) => {
+    try {
+        console.log(`SERVICE updateUsuarioService - ID: ${id}, Datos: ${JSON.stringify(updateData)}`);
+        return await usuarioRepository.updateUsuario(id, updateData);
+    } catch (error) {
+        console.log("Error en updateUsuario:" + error);
+        throw error("Error en el service" + error)
+    }
+};
 
 
