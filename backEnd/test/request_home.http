@@ -1,0 +1,5 @@
+### Obtener todas las cervezas
+GET http://localhost:3000/  // O http://localhost:3000/cervezas si usas ese prefijo
+
+### Obtener una cerveza por ID
+GET http://localhost:3000/{{idCerveza}}

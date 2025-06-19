@@ -73,16 +73,29 @@ const deleteCervezaById = async (req, res) => {
     }
 };
 
-const updateStockCerveza = async (req, res) => {
+const updateCerveza = async (req, res) => {
     try {
-        const { cantidad } = req.body;
-        const cerveza = await cervezaService.updateStockCerveza(req.params.id,cantidad);
-        if (!cerveza) {
+        const { id } = req.params;
+        const { nombre, tipo, stock_actual, stock_minimo, activo } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: "ID de cerveza requerido" });
+        }
+
+        const updateData = {};
+        if (nombre) updateData.nombre = nombre;
+        if (tipo) updateData.tipo = tipo;
+        if (stock_actual !== undefined) updateData.stock_actual = stock_actual;
+        if (stock_minimo !== undefined) updateData.stock_minimo = stock_minimo;
+        if (activo !== undefined) updateData.activo = activo;
+
+        const cervezaActualizada = await cervezaService.updateCerveza(id, updateData);
+        if (!cervezaActualizada) {
             return res.status(404).json({ error: "Cerveza no encontrada" });
         }
-        res.status(200).json(cerveza);
+        res.status(200).json(cervezaActualizada);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -92,5 +105,5 @@ module.exports = {
     getCervezaById,
     getCervezaByName,
     deleteCervezaById,
-    updateStockCerveza,
+    updateCerveza
 };

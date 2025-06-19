@@ -20,8 +20,8 @@ const deleteCervezaById = async (id) => {
     return await cervezaRepository.deleteCervezaById(id);
 };
 
-const updateStockCerveza = async (id, cantidad) => {
-    return await cervezaRepository.updateStockCerveza(id, cantidad);
+const updateCerveza = async (id, updateData) => {
+    return await cervezaRepository.updateCerveza(id, updateData);
 };
 
 module.exports = {
@@ -30,5 +30,5 @@ module.exports = {
     getCervezaById,
     getCervezaByName,
     deleteCervezaById,
-    updateStockCerveza
+    updateCerveza
 };

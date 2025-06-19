@@ -8,8 +8,11 @@ const createPedido = async (pedidoData) => {
 }
 
 const getAllPedidos = async () => {
-    return await Pedido.find().populate('cerveza_id');
-}
+    return await Pedido.find()
+        .populate('usuario_id', 'nombre')
+        .populate('aprobado_por', 'nombre')
+        .populate('cervezas.cerveza', 'nombre');
+};
 
 const getPedidoById = async (id) => {
     return await Pedido.findOne({ id });
@@ -20,12 +23,10 @@ const deletePedidoById = async (id) => {
 }
 
 const updatePedido = async (id, { aprobado_por, estado }) => {
-    // Validar estado antes de actualizar
     if (estado && !ESTADOS_VALIDOS.includes(estado)) {
         throw new Error('Estado no válido');
     }
 
-    // Solo permite actualizar los campos 'aprobado_por' y 'estado'
     const updateFields = {};
     if (aprobado_por) updateFields.aprobado_por = aprobado_por;
     if (estado) updateFields.estado = estado;
@@ -36,4 +37,12 @@ const updatePedido = async (id, { aprobado_por, estado }) => {
         updateFields,
         { new: true }
     );
+};
+
+module.exports = {
+    createPedido,
+    getAllPedidos,
+    getPedidoById,
+    deletePedidoById,
+    updatePedido
 };

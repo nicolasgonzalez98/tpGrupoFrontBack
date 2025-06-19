@@ -38,6 +38,20 @@ const updateStockCerveza = async (id, cantidad) => {
   );
 };
 
+const updateCerveza = async (id, updateData) => {
+  if (updateData.stock_actual !== undefined && updateData.stock_actual < 0) {
+    throw new Error('El stock_actual no puede ser negativo');
+  }
+  if (updateData.stock_minimo !== undefined && updateData.stock_minimo < 0) {
+    throw new Error('El stock_minimo no puede ser negativo');
+  }
+
+  return await Cerveza.findByIdAndUpdate(
+    id,
+    updateData,
+    { new: true }
+  );
+};
 
 module.exports = {
   createCerveza,
@@ -45,5 +59,5 @@ module.exports = {
   getCervezaByName,
   getAllCervezas,
   deleteCervezaById,
-  updateStockCerveza
+  updateCerveza
 };
