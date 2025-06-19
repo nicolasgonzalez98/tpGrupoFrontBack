@@ -1,0 +1,32 @@
+### Listar todas las cervezas (admin)
+GET http://localhost:3000/stock
+
+### Obtener una cerveza por ID
+GET http://localhost:3000/stock/{{idCerveza}}
+
+### Crear una nueva cerveza
+POST http://localhost:3000/stock
+Content-Type: application/json
+
+{
+  "nombre": "IPA",
+  "tipo": "Rubia",
+  "stock_actual": 100,
+  "stock_minimo": 10,
+  "activo": true
+}
+
+### Editar una cerveza existente
+PATCH http://localhost:3000/stock/{{idCerveza}}
+Content-Type: application/json
+
+{
+  "nombre": "IPA Actualizada",
+  "tipo": "Rubia",
+  "stock_actual": 120,
+  "stock_minimo": 15,
+  "activo": true
+}
+
+### Eliminar una cervezaa
+DELETE http://localhost:3000/stock/{{idCerveza}}
