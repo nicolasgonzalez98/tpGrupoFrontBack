@@ -6,6 +6,8 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
+import { CervezaService } from '../../../../services/cerveza.service';
+//import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-cerveza-form',
@@ -23,6 +25,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 export class CervezaFormComponent implements OnInit {
 
   id?: string;
+
   cerveza = {
     nombre: '',
     tipo: '',
@@ -31,40 +34,78 @@ export class CervezaFormComponent implements OnInit {
     activo: true
   };
 
-  constructor(private route: ActivatedRoute, private router: Router) {}
+  error: string = '';
+  errores_form: { [campo: string]: string } = {};
+
+  constructor(
+    private route: ActivatedRoute, 
+    private router: Router, 
+    private cervezaService: CervezaService,
+    
+  ) {}
 
   ngOnInit(): void {
     this.id = this.route.snapshot.paramMap.get('id') || undefined;
 
     if (this.id) {
-      // Aquí deberías llamar al service para obtener la cerveza por id y cargar datos
-      // Por ejemplo:
-      // this.cervezaService.getCerveza(this.id).subscribe(data => this.cerveza = data);
-      console.log('Editar cerveza con id:', this.id);
-      // Simulamos carga con datos dummy para el ejemplo
-      this.cerveza = {
-        nombre: 'Ejemplo IPA',
-        tipo: 'Rubia',
-        stock_actual: 15,
-        stock_minimo: 5,
-        activo: true
-      }
+      this.cervezaService.getById(this.id).subscribe({
+        next: (data) => this.cerveza = data,
+        error: () => {
+          this.error = 'No se pudo cargar la cerveza.';
+          console.error('Error cargando cerveza');
+        }
+      });
     }
   }
 
-  guardar() {
-    if (this.id) {
-      // Actualizar cerveza
-      console.log('Actualizando cerveza', this.cerveza);
-      // Llamar al service update
-    } else {
-      // Crear nueva cerveza
-      console.log('Creando cerveza', this.cerveza);
-      // Llamar al service create
+  validar(): boolean {
+    this.errores_form = {};
+    this.error = ""
+
+    const { nombre, tipo, stock_actual, stock_minimo } = this.cerveza;
+
+    if (!nombre.trim()) {
+      this.errores_form['nombre'] = 'El nombre es obligatorio.';
     }
 
-    // Redirigir a la lista de cervezas
-    this.router.navigate(['/stock']);
+    if (!tipo.trim()) {
+      this.errores_form['tipo'] = 'El tipo es obligatorio.';
+    }
+
+    if (stock_actual < 0) {
+      this.errores_form['stock_actual'] = 'El stock actual no puede ser negativo.';
+    }
+
+    if (stock_minimo < 0) {
+      this.errores_form['stock_minimo'] = 'El stock mínimo no puede ser negativo.';
+    }
+
+    this.error = '';
+    
+    return Object.keys(this.errores_form).length === 0;
+  }
+
+  guardar() {
+    
+    if (!this.validar()) return;
+
+    if (this.id) {
+      this.cervezaService.update(this.id, this.cerveza).subscribe({
+        next: () => this.router.navigate(['/stock']),
+        error: (err) => {
+          console.error(err);
+          this.error = 'Error actualizando la cerveza.';
+        }
+      });
+    } else {
+      this.cervezaService.create(this.cerveza).subscribe({
+        next: () => this.router.navigate(['/stock']),
+        error: (err) => {
+          console.error(err);
+          this.error = 'Error creando la cerveza.';
+        }
+      });
+    }
   }
 
   cancelar() {

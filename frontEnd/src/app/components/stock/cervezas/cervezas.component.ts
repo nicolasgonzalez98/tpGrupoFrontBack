@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ICerveza } from '../../../models/cerveza.models';
+import { CervezaService } from '../../../../services/cerveza.service';
 
 @Component({
   selector: 'app-cervezas',
@@ -17,42 +19,52 @@ import { RouterModule } from '@angular/router';
 })
 
 export class CervezasComponent implements OnInit {
-  cervezas = [
-    {
-      _id: '1',
-      nombre: 'Golden Ale',
-      tipo: 'Rubia',
-      stock_actual: 50,
-      stock_minimo: 20,
-      activo: true
-    },
-    {
-      _id: '2',
-      nombre: 'IPA',
-      tipo: 'Lupulada',
-      stock_actual: 10,
-      stock_minimo: 15,
-      activo: true
-    }
-  ];
+  cervezas: ICerveza[] = [];
+  error: string = '';
 
-  constructor() {}
+  private _cervezaService = inject(CervezaService);
 
-  ngOnInit(): void {}
+  constructor(private cervezaService : CervezaService) {}
+
+  ngOnInit(): void {
+    this.getAllCervezas();
+  }
+
+  getAllCervezas() {
+    this._cervezaService.getAll().subscribe({
+      next: data => {
+        this.cervezas = data;
+        this.error = "";
+      },
+      error: err => {
+        console.log(err)
+        this.error = 'No se pudieron cargar las cervezas. Verificá la conexión con el servidor.';
+      }
+    });
+  }
 
   editar(cerveza: any) {
     console.log('Editar', cerveza);
     // Acá podrías abrir un diálogo
   }
 
-  eliminar(cerveza: any) {
-    console.log('Eliminar', cerveza);
-    // Confirmación y acción
+  deleteCerveza(id: string) {
+    this._cervezaService.delete(id).subscribe({
+      next: data => {
+        console.log(`Cerveza eliminada: ${data.nombre}`);
+        this.getAllCervezas();
+      },
+      error: error => {
+        console.error('Error al eliminar cerveza:', error);
+      }
+    });
   }
 
-  agregar() {
-    console.log('Agregar nueva cerveza');
-    // Mostrar modal o redirigir a formulario
+  eliminar(cerveza: ICerveza) {
+    if (cerveza._id && confirm(`¿Eliminar cerveza "${cerveza.nombre}"?`)) {
+      this.deleteCerveza(cerveza._id);
+    }
   }
+
 }
 
