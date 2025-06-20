@@ -1,3 +1,5 @@
+@idCerveza = 6854ceac38bd69f4c8af6571
+
 ### Listar todas las cervezas (admin)
 GET http://localhost:3000/stock
 
@@ -9,10 +11,10 @@ POST http://localhost:3000/stock
 Content-Type: application/json
 
 {
-  "nombre": "IPA",
+  "nombre": "IPA Nueva",
   "tipo": "Rubia",
-  "stock_actual": 100,
-  "stock_minimo": 10,
+  "stock_actual": 101,
+  "stock_minimo": 11,
   "activo": true
 }
 

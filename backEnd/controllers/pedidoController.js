@@ -2,16 +2,21 @@ const pedidoService = require('../services/pedidoService');
 
 const createPedido = async (req, res) => {
   try {
-    const { usuario_id, cerveza_id, cantidad } = req.body;
+    const { usuario_id, cervezas } = req.body;
 
-    if (!usuario_id || !cerveza_id || !cantidad) {
+    if (!usuario_id || !Array.isArray(cervezas) || cervezas.length === 0) {
       return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+
+    for (const item of cervezas) {
+      if (!item.cerveza || !item.cantidad) {
+        return res.status(400).json({ error: 'Cada cerveza debe tener id y cantidad' });
+      }
     }
 
     const nuevoPedido = await pedidoService.createPedido({
       usuario_id,
-      cerveza_id,
-      cantidad,
+      cervezas,
       estado: 'pendiente'
     });
 

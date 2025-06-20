@@ -1,3 +1,9 @@
+@idUsuario = 684768c24861e333311357da
+@idCerveza = 6854ceac38bd69f4c8af6571
+@idOtraCerveza = 6854ced238bd69f4c8af6573
+@idPedido = 6854d25ab1a5795247d52deb
+@idAprobador = 68477070cb6d86c668efe0ed
+
 ### Listar todos los pedidos
 GET http://localhost:3000/pedido
 

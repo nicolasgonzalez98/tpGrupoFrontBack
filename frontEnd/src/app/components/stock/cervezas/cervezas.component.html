@@ -1,0 +1,42 @@
+<div class="p-4">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-semibold">Listado de Cervezas</h2>
+    <button pButton type="button" label="Agregar Cerveza" class="p-button-success" [routerLink]="['/stock/crearCerveza']"></button>
+  </div>
+
+  <p-table [value]="cervezas" [responsiveLayout]="'scroll'" class="shadow-md rounded-md">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Stock Actual</th>
+        <th>Stock Mínimo</th>
+        <th>Activo</th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-cerveza>
+      <tr>
+        <td>{{ cerveza.nombre }}</td>
+        <td>{{ cerveza.tipo }}</td>
+        <td>{{ cerveza.stock_actual }}</td>
+        <td>{{ cerveza.stock_minimo }}</td>
+        <td>
+          <span [ngClass]="cerveza.activo ? 'text-green-600' : 'text-red-600'">
+            {{ cerveza.activo ? 'Sí' : 'No' }}
+          </span>
+        </td>
+        <td>
+          <a pButton [routerLink]="['/stock/editarCerveza', cerveza._id]" class="p-button-rounded p-button-text p-button-sm mr-2" >Editar</a>
+          <button pButton class="p-button-sm p-button-rounded p-button-danger" (click)="eliminar(cerveza)">Eliminar</button>
+        </td>
+      </tr>
+      
+    </ng-template>
+    
+  </p-table>
+  <div *ngIf="error" class="p-4 mt-2 mb-4 bg-red-100 border border-red-300 text-red-800 rounded-md">
+    {{ error }}
+  </div>
+</div>
+

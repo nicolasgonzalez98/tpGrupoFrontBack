@@ -10,13 +10,13 @@ const createCerveza = async (req, res) => {
         if (!tipo || typeof tipo !== "string") {
             return res.status(400).json({ error: "El tipo es requerido y debe ser un string." });
         }
-        if (stock_actual !== undefined && typeof stock_actual !== "number") {
+        if (stock_actual && typeof stock_actual !== "number") {
             return res.status(400).json({ error: "El stock_actual debe ser un número." });
         }
-        if (stock_minimo !== undefined && typeof stock_minimo !== "number") {
+        if (stock_minimo && typeof stock_minimo !== "number") {
             return res.status(400).json({ error: "El stock_minimo debe ser un número." });
         }
-        if (activo !== undefined && typeof activo !== "boolean") {
+        if (activo && typeof activo !== "boolean") {
             return res.status(400).json({ error: "El campo activo debe ser booleano." });
         }
 

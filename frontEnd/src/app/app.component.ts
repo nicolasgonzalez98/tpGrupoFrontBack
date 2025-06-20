@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { NavbarComponent } from "./navbar/navbar.component";
 
 
+
 @Component({
   selector: 'app-root',
   imports: [LayoutComponent, CommonModule, NavbarComponent],

@@ -10,32 +10,11 @@ const getAllCervezas = async () => {
 }
 
 const getCervezaById = async (id) => {
-  return await Cerveza.findOne({ id });
-};
-
-const getCervezaByName = async (nombre) => {
-  return await Cerveza.findOne({ nombre });
+  return await Cerveza.findOne({_id: id});
 };
 
 const deleteCervezaById = async (id) => {
   return await Cerveza.findByIdAndDelete(id);
-};
-
-const updateStockCerveza = async (id, cantidad) => {
-  const cerveza = await Cerveza.findById(id);
-  if (!cerveza) return null;
-
-  const nuevoStock = cerveza.stock_actual + cantidad;
-
-  if (nuevoStock < 0) {
-    throw new Error('El stock no puede ser negativo');
-  }
-
-  return await Cerveza.findByIdAndUpdate(
-    id,
-    { $inc: { stock_actual: cantidad } },
-    { new: true }
-  );
 };
 
 const updateCerveza = async (id, updateData) => {
@@ -56,7 +35,6 @@ const updateCerveza = async (id, updateData) => {
 module.exports = {
   createCerveza,
   getCervezaById,
-  getCervezaByName,
   getAllCervezas,
   deleteCervezaById,
   updateCerveza

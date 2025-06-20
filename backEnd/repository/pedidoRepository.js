@@ -15,7 +15,7 @@ const getAllPedidos = async () => {
 };
 
 const getPedidoById = async (id) => {
-    return await Pedido.findOne({ id });
+    return await Pedido.findOne({ _id: id });
 }
 
 const deletePedidoById = async (id) => {
