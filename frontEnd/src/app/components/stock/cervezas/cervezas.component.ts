@@ -48,6 +48,7 @@ export class CervezasComponent implements OnInit {
     // Acá podrías abrir un diálogo
   }
 
+  //TODO: Unificar metodos de borrado?
   deleteCerveza(id: string) {
     this._cervezaService.delete(id).subscribe({
       next: data => {

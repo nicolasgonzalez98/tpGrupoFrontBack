@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class CervezaService {
-  private url = 'http://localhost:3000/api/cervezas';
+  private url = 'http://localhost:3000/';
 
   constructor(private _httpClient: HttpClient) {}
 

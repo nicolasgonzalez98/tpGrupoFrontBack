@@ -1,5 +1,5 @@
 export interface ICerveza {
-  _id?: string;              // MongoDB genera este campo automáticamente
+  _id?: string;
   nombre: string;
   tipo: string;
   stock_actual: number;

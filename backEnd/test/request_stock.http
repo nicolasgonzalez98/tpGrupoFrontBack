@@ -1,4 +1,4 @@
-@idCerveza = 6854cb9ade76d75569f507da
+@idCerveza = 6854ceac38bd69f4c8af6571
 
 ### Listar todas las cervezas (admin)
 GET http://localhost:3000/stock
