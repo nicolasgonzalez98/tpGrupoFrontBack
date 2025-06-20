@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const cervezaSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
@@ -8,4 +8,4 @@ const cervezaSchema = new mongoose.Schema({
   activo: { type: Boolean, default: true },
 }, { timestamps: true });
 
-export default mongoose.model('Cerveza', cervezaSchema);
+module.exports = mongoose.model('Cerveza', cervezaSchema);
