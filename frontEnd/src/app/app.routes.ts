@@ -9,7 +9,10 @@ import { StockComponent } from './components/stock/stock.component';
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
 
-// Ejemplo si tenés una página Home
+//Stock
+import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
+import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
+
 
 
 export const routes: Routes = [
@@ -19,7 +22,11 @@ export const routes: Routes = [
     children: [
       { path: '', component: StockComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
-      { path: 'login', component: LoginComponent, canActivate: [GuestGuard]}
+      { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
+      { path: "stock", component: CervezasComponent},
+      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent},
+      { path: 'stock/crearCerveza',component: CervezaFormComponent },
+      { path:'**', redirectTo:''},
     ]
   }
 ];
