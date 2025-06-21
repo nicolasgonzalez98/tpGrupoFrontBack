@@ -8,6 +8,7 @@ import { StockComponent } from './components/stock/stock.component';
 //Guards
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
+import { AdminGuard } from './guards/admin.guard';
 
 //Stock
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';

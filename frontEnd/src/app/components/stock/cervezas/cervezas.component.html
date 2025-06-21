@@ -1,7 +1,7 @@
 <div class="p-4">
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-xl font-semibold">Listado de Cervezas</h2>
-    <button pButton type="button" label="Agregar Cerveza" class="p-button-success" [routerLink]="['/stock/crearCerveza']"></button>
+    <button pButton type="button" label="Agregar Cerveza" class="p-button-success" icon="pi pi-plus" [routerLink]="['/stock/crearCerveza']"></button>
   </div>
 
   <p-table [value]="cervezas" [responsiveLayout]="'scroll'" class="shadow-md rounded-md">
@@ -27,8 +27,13 @@
           </span>
         </td>
         <td>
-          <a pButton [routerLink]="['/stock/editarCerveza', cerveza._id]" class="p-button-rounded p-button-text p-button-sm mr-2" >Editar</a>
-          <button pButton class="p-button-sm p-button-rounded p-button-danger" (click)="eliminar(cerveza)">Eliminar</button>
+          <a pButton [routerLink]="['/stock/editarCerveza', cerveza._id]" 
+            class="p-button-rounded p-button-text p-button-sm mr-2" 
+            icon="pi pi-pencil"
+            >
+            Editar
+          </a>
+          <button pButton class="p-button-sm p-button-rounded p-button-danger" icon="pi pi-trash" (click)="eliminar(cerveza)">Eliminar</button>
         </td>
       </tr>
       
@@ -38,5 +43,27 @@
   <div *ngIf="error" class="p-4 mt-2 mb-4 bg-red-100 border border-red-300 text-red-800 rounded-md">
     {{ error }}
   </div>
+
+  <p-confirmDialog></p-confirmDialog>
+  
+  <p-dialog
+        header="¡Exito!"
+        [(visible)]="showDialog"
+        modal
+        [closable]="true"
+        [dismissableMask]="true"
+        [style]="{ width: '300px' }"
+    >
+        <div class="flex flex-col items-center text-center space-y-4">
+            <i class="pi pi-check-circle text-green-500 text-5xl"></i>
+            <p class="text-lg">
+              {{ showCreatedDialog ? 'La cerveza fue creada correctamente.' : 'La cerveza fue editada correctamente.' }}
+            </p>
+            
+            <p class="text-sm text-gray-600">
+              {{ showCreatedDialog ? 'Ahora aparece en la lista de stock.' : 'Los cambios fueron guardados exitosamente.' }}
+            </p>
+        </div>
+    </p-dialog>
 </div>
 

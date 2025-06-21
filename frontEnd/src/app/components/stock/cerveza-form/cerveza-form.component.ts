@@ -91,17 +91,15 @@ export class CervezaFormComponent implements OnInit {
 
     if (this.id) {
       this.cervezaService.update(this.id, this.cerveza).subscribe({
-        next: () => this.router.navigate(['/stock']),
+        next: () => this.router.navigate(['/stock'], { queryParams: { editado: true } }),
         error: (err) => {
-          console.error(err);
           this.error = 'Error actualizando la cerveza.';
         }
       });
     } else {
       this.cervezaService.create(this.cerveza).subscribe({
-        next: () => this.router.navigate(['/stock']),
+        next: () => this.router.navigate(['/stock'], { queryParams: { creado: true } }),
         error: (err) => {
-          console.error(err);
           this.error = 'Error creando la cerveza.';
         }
       });
