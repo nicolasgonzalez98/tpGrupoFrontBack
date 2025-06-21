@@ -16,9 +16,9 @@ connectDB();
 
 app.use('/api/auth', authRoutes);
 
-app.use('/', cervezaRoutes);
-
 app.use('/stock', stockRoutes);
+
+app.use('/', cervezaRoutes);
 
 app.use('/pedido', pedidoRoutes);
 
