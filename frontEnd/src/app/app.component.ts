@@ -1,16 +1,18 @@
 import { Component } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { LayoutComponent } from "./layout/layout.component";
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/authService';
-import { CommonModule } from '@angular/common';
 import { NavbarComponent } from "./navbar/navbar.component";
+import { ListaUsuariosComponent } from '../app/components/lista-usuarios/lista-usuarios.component';
 
 
 
 @Component({
   selector: 'app-root',
-  imports: [LayoutComponent, CommonModule, NavbarComponent],
+  imports: [LayoutComponent, CommonModule, RouterOutlet,
+    ListaUsuariosComponent, NavbarComponent ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -18,6 +20,7 @@ import { NavbarComponent } from "./navbar/navbar.component";
 export class AppComponent {
     showNavbar = true;
     isLoggedIn = false;
+    dropdownOpen = false;
 
     constructor(public authService: AuthService, private router: Router) {
       
@@ -32,4 +35,14 @@ export class AppComponent {
           this.isLoggedIn = status;
         });
     }
+
+    toggleDropdown() {
+    this.dropdownOpen = !this.dropdownOpen;
+  }
+
+    logout() {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+    }
+
 }
