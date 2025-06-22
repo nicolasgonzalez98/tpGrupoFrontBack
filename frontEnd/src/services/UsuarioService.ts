@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Usuario } from '../app/models/UsuarioModel'; // ¡Importa la interfaz Usuario!
+import { Usuario } from '../app/models/UsuarioModel';
 
 @Injectable({
   providedIn: 'root'
@@ -15,4 +15,9 @@ export class UsuarioService {
   getUsuarios(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(this.apiUrl);
   }
+
+  updateUsuario(id: string, partialData: Partial<Usuario>): Observable<Usuario> {
+     return this.http.patch<Usuario>(`${this.apiUrl}/${id}`, partialData);
+  }
 }
+
