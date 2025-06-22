@@ -24,10 +24,10 @@ export const routes: Routes = [
       { path: '', component: StockComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
-      { path: "stock", component: CervezasComponent},
-      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent},
-      { path: 'stock/crearCerveza',component: CervezaFormComponent },
-      { path:'**', redirectTo:''},
+      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
+      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: '**', redirectTo:''}
     ]
   }
 ];
