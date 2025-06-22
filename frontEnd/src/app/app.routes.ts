@@ -9,17 +9,18 @@ import { AdminDashboardComponent } from '../app/components/admin-dashboard/admin
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { EmpleadoGuard } from './guards/empleado.guard';
+import { ClienteGuard } from './guards/cliente.guard';
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
-
-
+import { HomeComponent } from './components/home/home.component';
 
 export const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
     children: [
-      { path: '', component: StockComponent, canActivate: [AuthGuard] },
+      { path: '', component: HomeComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
       { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},

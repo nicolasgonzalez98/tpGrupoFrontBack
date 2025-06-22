@@ -1,0 +1,78 @@
+<div class="p-6 space-y-10">
+
+  <!-- Sección Admin -->
+  <section *ngIf="isAdmin">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Admin</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="/admin"
+         class="block p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg hover:scale-105 hover:bg-gray-100 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-cog text-3xl text-blue-600"></i>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Panel de Admin</h3>
+            <p class="text-sm text-gray-600">Gestionar configuraciones generales</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Sección Stock -->
+  <section *ngIf="isAdmin || isEmployee">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Stock</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="/stock"
+         class="block p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg hover:scale-105 hover:bg-gray-100 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-box text-3xl text-green-600"></i>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Ver Stock</h3>
+            <p class="text-sm text-gray-600">Consultar cervezas disponibles</p>
+          </div>
+        </div>
+      </a>
+
+      <a href="/stock/administrar-pedidos"
+         class="block p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg hover:scale-105 hover:bg-gray-100 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-truck text-3xl text-green-600"></i>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Administrar Pedidos</h3>
+            <p class="text-sm text-gray-600">Ver y gestionar pedidos entrantes</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Sección Pedidos -->
+  <section *ngIf="isClient">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Pedidos</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="/pedido"
+         class="block p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg hover:scale-105 hover:bg-gray-100 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-shopping-cart text-3xl text-yellow-600"></i>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Realizar Pedido</h3>
+            <p class="text-sm text-gray-600">Elegí tus productos y hacé tu pedido</p>
+          </div>
+        </div>
+      </a>
+
+      <a href="/pedidos/mis-pedidos"
+         class="block p-6 rounded-lg border border-gray-200 shadow hover:shadow-lg hover:scale-105 hover:bg-gray-100 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-list text-3xl text-yellow-600"></i>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Ver Mis Pedidos</h3>
+            <p class="text-sm text-gray-600">Seguimiento y estado de tus pedidos</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </section>
+</div>
+
+
+
