@@ -12,10 +12,6 @@ const getCervezaById = async (id) => {
     return await cervezaRepository.getCervezaById(id);
 };
 
-const getCervezaByName = async (nombre) => {
-    return await cervezaRepository.getCervezaByName(nombre);
-};
-
 const deleteCervezaById = async (id) => {
     return await cervezaRepository.deleteCervezaById(id);
 };
@@ -28,7 +24,6 @@ module.exports = {
     createCerveza,
     getAllCervezas,
     getCervezaById,
-    getCervezaByName,
     deleteCervezaById,
     updateCerveza
 };

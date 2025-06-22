@@ -11,8 +11,6 @@ import { StockComponent } from './components/stock/stock.component';
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
 import { AdminGuard } from './guards/admin.guard';
-
-//Stock
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 
