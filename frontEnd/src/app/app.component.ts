@@ -1,36 +1,39 @@
 import { Component } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
 import { LayoutComponent } from "./layout/layout.component";
+import { filter } from 'rxjs/operators';
+import { AuthService } from '../services/authService';
+import { CommonModule } from '@angular/common';
+import { NavbarComponent } from "./navbar/navbar.component";
+
+
 import { ListaUsuariosComponent } from '../app/components/lista-usuarios/lista-usuarios.component';
 
 @Component({
   selector: 'app-root',
   imports: [LayoutComponent, CommonModule, RouterOutlet,
-    ListaUsuariosComponent ],
+    ListaUsuariosComponent, NavbarComponent ],
+
+
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 
 export class AppComponent {
-  mostrarNavbar = false;
-  dropdownOpen = false;
+    showNavbar = true;
+    isLoggedIn = false;
 
-  constructor(private router: Router) {
-    router.events.subscribe(event => {
-      if (event instanceof NavigationEnd) {
-        const url = event.urlAfterRedirects;
-        this.mostrarNavbar = url.includes('/stock') || url.includes('/register');
-      }
-    });
-  }
+    constructor(public authService: AuthService, private router: Router) {
+      
+        this.router.events.pipe(
+          filter(event => event instanceof NavigationEnd)
+        ).subscribe((event: NavigationEnd) => {
+          const path = event.url;
+          this.showNavbar = !['/login', '/register'].includes(path);
+        });
 
-  toggleDropdown() {
-    this.dropdownOpen = !this.dropdownOpen;
-  }
-
-  logout() {
-    // Limpiar datos de sesión si es necesario
-    this.router.navigate(['/login']);
-  }
+        this.authService.isLoggedIn$.subscribe(status => {
+          this.isLoggedIn = status;
+        });
+    }
 }

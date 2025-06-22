@@ -1,0 +1,34 @@
+@idCerveza = 6854ceac38bd69f4c8af6571
+
+### Listar todas las cervezas (admin)
+GET http://localhost:3000/stock
+
+### Obtener una cerveza por ID
+GET http://localhost:3000/stock/{{idCerveza}}
+
+### Crear una nueva cerveza
+POST http://localhost:3000/stock
+Content-Type: application/json
+
+{
+  "nombre": "IPA Nueva",
+  "tipo": "Rubia",
+  "stock_actual": 101,
+  "stock_minimo": 11,
+  "activo": true
+}
+
+### Editar una cerveza existente
+PATCH http://localhost:3000/stock/{{idCerveza}}
+Content-Type: application/json
+
+{
+  "nombre": "IPA Actualizada",
+  "tipo": "Rubia",
+  "stock_actual": 120,
+  "stock_minimo": 15,
+  "activo": true
+}
+
+### Eliminar una cervezaa
+DELETE http://localhost:3000/stock/{{idCerveza}}

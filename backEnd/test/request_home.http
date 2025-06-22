@@ -1,0 +1,7 @@
+@idCerveza = 6854ceac38bd69f4c8af6571
+
+### Obtener todas las cervezas
+GET http://localhost:3000/
+
+### Obtener una cerveza por ID
+GET http://localhost:3000/{{idCerveza}}
