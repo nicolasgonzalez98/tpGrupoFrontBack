@@ -26,19 +26,41 @@
       </div>
       <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
         <div class="flex shrink-0 items-center">
-          <img class="h-8 w-auto" src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500" alt="Your Company" />
+          <img class="h-8 w-auto" src="https://cdn-icons-png.flaticon.com/512/6541/6541764.png" alt="Cerveceria" />
         </div>
         <div class="hidden sm:ml-6 sm:block">
           <div class="flex space-x-4">
-            <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-            <a href="/" routerLinkActive="bg-gray-900 text-white" class="cursor-pointer rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Stock</a>
-            <a href="/admin" routerLinkActive="bg-gray-900 text-white" class="cursor-pointer rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Panel de Admin</a>
-          </div>
+              <ng-container *ngFor="let item of menuItems">
+                <div *ngIf="item.visible()" class="relative"
+                  (mouseenter)="showMenus[item.submenuKey] = true"
+                  (mouseleave)="showMenus[item.submenuKey] = false">
+
+                  <button class="cursor-pointer rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white">
+                    {{ item.label }}
+                  </button>
+
+                  <div class="absolute left-0 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                    *ngIf="showMenus[item.submenuKey]">
+                    <div class="py-1">
+                      <ng-container *ngFor="let sub of item.submenu">
+                        <a 
+                          *ngIf="sub.visible()" 
+                          [href]="sub.path"
+                          routerLinkActive="bg-gray-100 text-gray-900"
+                          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+                          {{ sub.label }}
+                        </a>
+                      </ng-container>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
         </div>
       </div>
       <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-        <!-- Profile dropdown -->
-            <p-button label="Cerrar sesión" (click)="this.authService.logout()" />
+        
+            <p-button icon="pi pi-sign-out" label="Cerrar sesión" (click)="this.authService.logout()" />
       </div>
     </div>
   </div>

@@ -8,6 +8,7 @@ import { AdminHomeComponent } from '../app/components/admin/admin.component';
 import { AdminDashboardComponent } from '../app/components/admin-dashboard/admin-dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
+import { AdminGuard } from './guards/admin.guard';
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 
@@ -21,10 +22,10 @@ export const routes: Routes = [
       { path: '', component: StockComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
-      { path: "stock", component: CervezasComponent},
-      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent},
-      { path: 'stock/crearCerveza',component: CervezaFormComponent },
-      { path:'**', redirectTo:''},
+      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
+      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: '**', redirectTo:''}
     ]
   }
 ];

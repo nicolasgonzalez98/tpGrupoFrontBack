@@ -5,9 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { AuthService } from '../../../services/authService';
-
-
-
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -19,15 +17,18 @@ import { AuthService } from '../../../services/authService';
 export class RegisterComponent {
   registerForm: FormGroup;
   loading = false;
-  errorMessage = '';
-  successMessage = '';
+  errorMessage :string = '';
+  successMessage :string = '';
+  isAdminCreatingEmployee:boolean = false;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router:Router, private route: ActivatedRoute) {
     this.registerForm = this.fb.group({
       nombre: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
+
+    this.isAdminCreatingEmployee = this.router.url.startsWith('/admin/crear-empleado');
   }
 
   async onRegister() {
@@ -37,10 +38,22 @@ export class RegisterComponent {
       this.errorMessage = '';
       this.successMessage = '';
 
+      const payload = {
+        ...this.registerForm.value,
+        ...(this.isAdminCreatingEmployee ? { rol: 'empleado' } : {}),
+      };
+      console.log(payload)
       try {
-        const res = await this.authService.register(this.registerForm.value);
+        const res = await this.authService.register(payload);
+
         this.successMessage = 'Usuario registrado correctamente';
         this.registerForm.reset();
+        if(!this.isAdminCreatingEmployee){
+          this.router.navigate(['/login'], { queryParams: { registrado: true } });
+        }else{
+          this.router.navigate(['/admin'], { queryParams: { registrado: true } });
+        }
+        
       } catch (err: any) {
         this.errorMessage = err.message || 'Error al registrar usuario';
       } finally {
