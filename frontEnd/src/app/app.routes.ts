@@ -4,13 +4,11 @@ import { LayoutComponent } from './layout/layout.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LoginComponent } from './components/login/login.component';
 import { StockComponent } from './components/stock/stock.component';
-
-//Guards
+import { AdminHomeComponent } from '../app/components/admin/admin.component';
+import { AdminDashboardComponent } from '../app/components/admin-dashboard/admin-dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
 import { AdminGuard } from './guards/admin.guard';
-
-//Stock
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 

@@ -8,8 +8,6 @@ router.get('/', stockController.getAllCervezas);
 
 router.get('/:id', stockController.getCervezaById);
 
-router.get('/:nombre', stockController.getCervezaByName);
-
 router.delete('/:id', stockController.deleteCervezaById);
 
 router.patch('/:id', stockController.updateCerveza);

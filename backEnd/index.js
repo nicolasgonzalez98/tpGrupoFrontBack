@@ -9,16 +9,19 @@ const cervezaRoutes = require('./routes/cervezaRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
 
+const usuarioRouter = require('./routers/UsuarioRouter'); 
 
 app.use(cors());
 app.use(express.json());
 connectDB();
 
-app.use('/api/auth', authRoutes);
 
-app.use('/', cervezaRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/usuarios', usuarioRouter);
 
 app.use('/stock', stockRoutes);
+
+app.use('/', cervezaRoutes);
 
 app.use('/pedido', pedidoRoutes);
 

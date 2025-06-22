@@ -1,0 +1,27 @@
+<h2>Lista de Usuarios</h2>
+
+<table style="width:100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #ddd;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nombre</th>
+      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Email</th>
+      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Rol</th>
+      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Activo</th>
+      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let usuario of usuarios">
+      <td style="border: 1px solid #ddd; padding: 8px;">{{ usuario.nombre }}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">{{ usuario.email }}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">{{ usuario.rol }}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">{{ usuario.activo ? 'Sí' : 'No' }}</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">
+        <button>Editar</button>
+        <button>{{ usuario.activo ? 'Desactivar' : 'Activar' }}</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p *ngIf="usuarios.length === 0">No hay usuarios para mostrar.</p>

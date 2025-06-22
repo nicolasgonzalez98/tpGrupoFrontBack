@@ -57,9 +57,10 @@ export class PedidosComponent implements OnInit {
   }
 
   confirmarPedido() {
+
     // Aquí podrías implementar la lógica para confirmar el pedido
     console.log('Pedido confirmado');
   }
 
-  //TODO:
+  //TODO: PEDIDO SERVICE
 }

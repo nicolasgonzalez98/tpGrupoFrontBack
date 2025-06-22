@@ -49,18 +49,6 @@ const getCervezaById = async (req, res) => {
     }
 };
 
-const getCervezaByName = async (req, res) => {
-    try {
-        const cerveza = await cervezaService.getCervezaByName(req.params.nombre);
-        if (!cerveza) {
-            return res.status(404).json({ error: "Cerveza no encontrada" });
-        }
-        res.status(200).json(cerveza);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
 const deleteCervezaById = async (req, res) => {
     try {
         const cerveza = await cervezaService.deleteCervezaById(req.params.id);
@@ -103,7 +91,6 @@ module.exports = {
     createCerveza,
     getAllCervezas,
     getCervezaById,
-    getCervezaByName,
     deleteCervezaById,
     updateCerveza
 };
