@@ -1,0 +1,41 @@
+<h2 class="p-mb-4">Administrar Pedidos</h2>
+@if (adminPedidos) {
+    <p class="p-mb-3">Total de pedidos: {{ adminPedidos.length }}</p>
+    <div class="p-grid p-dir-col p-gap-3">
+        @for(pedido of adminPedidos; track $index) {
+            <div class="p-col">
+                <p-card header="Pedido" class="p-mb-3">
+                    <ng-template #title>
+                        <span class="font-bold">Pedido ID: {{ pedido._id }}</span>
+                    </ng-template>
+                    <div class="p-mb-2"><strong>Estado:</strong> {{ pedido.estado }}</div>
+                    <div class="p-mb-2"><strong>Fecha:</strong> {{ pedido.fecha }}</div>
+                    <div class="p-mb-2"><strong>Pedido de:</strong> {{ pedido.usuario_id }}</div>
+                    <div class="p-mb-2"><strong>Cervezas solicitadas:</strong>
+                        <ul class="p-ml-3">
+                            @for(item of pedido.cervezas; track $index) {
+                                <li>Id: {{ item.cerveza }} - Cantidad: {{ item.cantidad }}</li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="p-mt-3 flex gap-2">
+                        @if (pedido.estado === 'pendiente') {
+                            <button pButton label="Aceptar" class="p-button-success" (click)="confirmarAceptacion(pedido)"></button>
+                            <button pButton label="Rechazar" class="p-button-danger" (click)="confirmarRechazo(pedido)"></button>
+                        } @else if (pedido.estado === 'aceptado') {
+                            <span class="text-green-700 font-semibold">Estado del pedido: Aceptado</span>
+                            <button pButton label="Rechazar" class="p-button-danger" (click)="confirmarRechazo(pedido)"></button>
+                        }
+                        @if (pedido.estado === 'rechazado') {
+                            <span class="text-red-700 font-semibold">Estado del pedido: Rechazado</span>
+                            <button pButton label="Aceptar" class="p-button-success" (click)="confirmarAceptacion(pedido)"></button>
+                        }
+                    </div>
+                </p-card>
+            </div>
+        }
+    </div>
+    <hr>
+} @else {
+    <p>No hay pedidos para administrar.</p>
+}

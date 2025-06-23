@@ -1,21 +1,23 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { AuthService } from '../../services/authService';
-import { IUsuario } from '../models/usuario.models';
-
+import { IUsuario, Rol } from '../models/usuario.models';
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
+export class EmpleadoGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): boolean {
-    if (this.authService.isLoggedIn()) {
+    const usuario: IUsuario | null = this.authService.getUser();
+
+    if (usuario && usuario.rol === Rol.Empleado) {
       return true;
     } else {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/']); 
       return false;
     }
   }
 }
+
