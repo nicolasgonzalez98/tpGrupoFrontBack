@@ -6,13 +6,14 @@ import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/authService';
 import { NavbarComponent } from "./navbar/navbar.component";
 import { ListaUsuariosComponent } from '../app/components/lista-usuarios/lista-usuarios.component';
-
+import { MessageService } from 'primeng/api';
 
 
 @Component({
   selector: 'app-root',
   imports: [LayoutComponent, CommonModule, RouterOutlet,
     ListaUsuariosComponent, NavbarComponent ],
+  providers: [MessageService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
