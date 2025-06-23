@@ -27,8 +27,8 @@ export const routes: Routes = [
       { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
       { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
       { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
-      { path: 'admin', component: AdminHomeComponent }, 
-      { path: 'admin/usuarios', component: AdminDashboardComponent },
+      { path: 'admin', component: AdminHomeComponent,canActivate: [AdminGuard] }, 
+      { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AdminGuard] },
       { path: '**', redirectTo:''}
     ]
   }

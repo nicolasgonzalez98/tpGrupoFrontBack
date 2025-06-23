@@ -1,9 +1,8 @@
-
-
 export interface IUsuario {
-  id: string;       
+  _id: string;       
   nombre: string;
   email: string;
+  password?: string; 
   rol: Rol;
   activo: boolean;
 }

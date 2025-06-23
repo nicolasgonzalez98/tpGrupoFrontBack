@@ -6,7 +6,7 @@ PATCH http://localhost:3000/api/usuarios/6848c5e726ca5b78f9040758
 Content-Type: application/json
 
 {
-    "activo": false
+    "activo": true
 }
 
 ### para actualizar rol 
@@ -15,4 +15,14 @@ Content-Type: application/json
 
 {
     "rol": "empleado"
+}
+
+### para crear empleado
+POST http://localhost:3000/api/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Nuevo Empleado",
+  "email": "empleado.nuevo@example.com",
+  "password": "passwordSegura123"
 }
