@@ -4,17 +4,17 @@ import { LayoutComponent } from './layout/layout.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LoginComponent } from './components/login/login.component';
 import { StockComponent } from './components/stock/stock.component';
+import { HomeComponent } from './components/home/home.component';
+import { PedidosComponent } from './components/pedidos/pedidos.component';
 
 //Guards
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
-import { AdminGuard } from './guards/admin.guard';
+import { EmpleadoGuard } from './guards/empleado.guard';
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
+import { AdministrarPedidosComponent } from './components/stock/administrar-pedidos/administrar-pedidos.component';
 
-//Pedidos
-import { PedidosComponent } from './components/pedidos/pedidos.component';
-import { HomeComponent } from './components/home/home.component';
 
 export const routes: Routes = [
   {
@@ -27,6 +27,7 @@ export const routes: Routes = [
       { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
       { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
       { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent, canActivate: [AuthGuard, EmpleadoGuard]},
       { path: 'pedidos', component: PedidosComponent, canActivate: [GuestGuard] },
       { path: '**', redirectTo:''}
     ]

@@ -38,6 +38,11 @@ export class PedidosComponent implements OnInit {
       },
       error: err => {
         console.error('Error al cargar cervezas:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las cervezas'
+        });
       }
     });
 
