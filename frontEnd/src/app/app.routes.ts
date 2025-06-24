@@ -16,6 +16,7 @@ import { ClienteGuard } from './guards/cliente.guard';
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 import { HomeComponent } from './components/home/home.component';
+import { RoleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -25,9 +26,9 @@ export const routes: Routes = [
       { path: '', component: HomeComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
-      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
-      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
-      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
+      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'empleado'] }},
+      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard, RoleGuard], data:{ roles: ['admin', 'empleado']}},
+      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'empleado']}},
       { path: 'admin', component: AdminHomeComponent,canActivate: [AuthGuard, AdminGuard] }, 
       { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AuthGuard, AdminGuard] },
       { path: 'admin/crear-empleado', component: RegisterComponent, canActivate: [AuthGuard, AdminGuard]},

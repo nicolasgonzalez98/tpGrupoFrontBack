@@ -66,7 +66,6 @@ export class CervezasComponent implements OnInit {
 
   set showDialog(value: boolean) {
     if (!value) {
-      // Si se cierra el diálogo, reseteamos ambos
       this.showEditedDialog = false;
       this.showCreatedDialog = false;
     }
