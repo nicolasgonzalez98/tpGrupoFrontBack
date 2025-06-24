@@ -15,6 +15,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 import { AdministrarPedidosComponent } from './components/stock/administrar-pedidos/administrar-pedidos.component';
+import { MisPedidosComponent } from './components/pedidos/mis-pedidos/mis-pedidos.component';
 
 
 export const routes: Routes = [
@@ -30,6 +31,7 @@ export const routes: Routes = [
       { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
       { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent, canActivate: [AuthGuard]},
       { path: 'pedidos', component: PedidosComponent, canActivate: [AuthGuard] },
+      { path: 'pedidos/mis-pedidos', component: MisPedidosComponent, canActivate: [AuthGuard] },
       { path: '**', redirectTo:''}
     ]
   }

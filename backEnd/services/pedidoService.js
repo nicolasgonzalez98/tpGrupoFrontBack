@@ -28,6 +28,11 @@ const getPedidoById = async (id) => {
     return await pedidoRepository.getPedidoById(id);
 }
 
+const getPedidosByUsuario = async (usuarioId) => {
+    return await pedidoRepository.getPedidosByUsuario(usuarioId);
+};
+
+
 const deletePedidoById = async (id) => {
     return await pedidoRepository.deletePedidoById(id);
 }
@@ -40,6 +45,7 @@ module.exports = {
     createPedido,
     getAllPedidos,
     getPedidoById,
+    getPedidosByUsuario,
     deletePedidoById,
     updatePedido
 }

@@ -1,0 +1,42 @@
+<h2 class="mb-6 text-2xl font-bold text-center">Mis Pedidos</h2>
+@if (misPedidos && misPedidos.length > 0) {
+  <div class="flex flex-wrap gap-8 justify-center">
+    @for(pedido of misPedidos; track $index) {
+      <div class="bg-gray-800 rounded-lg shadow-lg p-6 w-full sm:w-[350px] md:w-[400px] lg:w-[450px] mb-4 flex-shrink-0">
+        <div class="mb-2 text-gray-300 text-sm">Pedido ID: <span class="font-mono">{{ pedido._id }}</span></div>
+        <div class="mb-2"><strong>Estado:</strong>
+          @if (pedido.estado === 'pendiente') {
+            <span class="text-yellow-400"> {{ pedido.estado }}</span>
+          }
+          @if (pedido.estado === 'aprobado') {
+            <span class="text-green-400"> {{ pedido.estado }}</span>
+          }
+          @if (pedido.estado === 'rechazado') {
+            <span class="text-red-400"> {{ pedido.estado }}</span>
+          }
+        </div>
+        <div class="mb-2"><strong>Fecha:</strong> {{ pedido.fecha }}</div>
+        @if (pedido.estado === 'pendiente') {
+          <div class="mb-2 text-yellow-400">Tu pedido está pendiente de aprobación.</div>
+        } @else if (pedido.estado === 'aprobado') {
+          <div class="mb-2 text-green-400">Tu pedido ha sido aprobado.</div>
+          <div class="mb-2"><strong>Fecha aprobación:</strong> {{ pedido.fecha_aprobacion }}</div>
+        } @else if (pedido.estado === 'rechazado') {
+          <div class="mb-2 text-red-400">Tu pedido ha sido rechazado.</div>
+        }
+        <div class="mb-2"><strong>Cervezas solicitadas:</strong>
+          <ul class="ml-4 list-disc">
+            @for(item of pedido.cervezas; track $index) {
+              <li>
+                <span class="font-mono">Id: {{ item.cerveza }}</span>
+                <span class="ml-2">Cantidad: <span class="font-bold">{{ item.cantidad }}</span></span>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <p class="text-center text-gray-400 mt-8">No tenés pedidos realizados.</p>
+}

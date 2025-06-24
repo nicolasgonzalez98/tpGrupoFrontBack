@@ -40,4 +40,8 @@ export class PedidosService {
     return this._httpClient.get<IPedido>(`${this.url}/${pedidoId}`);
   }
 
+  getPedidosByUsuario(usuarioId: string): Observable<IAdminPedido[]> {
+    return this._httpClient.get<IAdminPedido[]>(`${this.url}/usuario/${usuarioId}`);
+  }
+
 }

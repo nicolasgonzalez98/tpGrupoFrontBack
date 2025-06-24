@@ -1,14 +1,17 @@
-@idUsuario = 684768c24861e333311357da
-@idCerveza = 6854ceac38bd69f4c8af6571
-@idOtraCerveza = 6854ced238bd69f4c8af6573
+@idUsuario = 6859de68e4bc21342b0d4f9a
+@idCerveza = 6856002fdc79cdb7874eb492
+@idOtraCerveza = 68586ffaa462f8fca9691588
 @idPedido = 685a22fec5a075bb61219575
-@idAprobador = 68477070cb6d86c668efe0ed
+@idAprobador = 685a1dda89c5a721e9b7d931
 
 ### Listar todos los pedidos
 GET http://localhost:3000/pedido
 
 ### Obtener un pedido por ID
 GET http://localhost:3000/pedido/{{idPedido}}
+
+### Listar pedidos por usuario
+GET http://localhost:3000/pedido/usuario/{{idUsuario}}
 
 ### Crear un nuevo pedido
 POST http://localhost:3000/pedido
@@ -17,8 +20,8 @@ Content-Type: application/json
 {
   "usuario_id": "{{idUsuario}}",
   "cervezas": [
-    { "cerveza": "{{idCerveza}}", "cantidad": 5 },
-    { "cerveza": "{{idOtraCerveza}}", "cantidad": 2 }
+    { "cerveza": "{{idCerveza}}", "cantidad": 3 },
+    { "cerveza": "{{idOtraCerveza}}", "cantidad": 4 }
   ]
 }
 

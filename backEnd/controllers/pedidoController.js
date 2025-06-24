@@ -50,6 +50,19 @@ const getPedidoById = async (req, res) => {
   }
 }
 
+const getPedidosByUsuario = async (req, res) => {
+  try {
+    const { usuarioId } = req.params;
+    if (!usuarioId) {
+      return res.status(400).json({ error: 'ID de usuario requerido' });
+    }
+    const pedidos = await pedidoService.getPedidosByUsuario(usuarioId);
+    res.status(200).json(pedidos);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const deletePedidoById = async (req, res) => {
   try {
     if (!req.params.id) {
@@ -82,6 +95,7 @@ module.exports = {
   createPedido,
   getAllPedidos,
   getPedidoById,
+  getPedidosByUsuario,
   deletePedidoById,
   updatePedido
 }

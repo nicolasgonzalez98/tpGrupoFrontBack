@@ -15,6 +15,10 @@ const getPedidoById = async (id) => {
     return await Pedido.findOne({ _id: id });
 }
 
+const getPedidosByUsuario = async (usuarioId) => {
+    return await Pedido.find({ usuario_id: usuarioId }).lean().exec();
+};
+
 const deletePedidoById = async (id) => {
     return await Pedido.findByIdAndDelete(id);
 }
@@ -40,6 +44,7 @@ module.exports = {
     createPedido,
     getAllPedidos,
     getPedidoById,
+    getPedidosByUsuario,
     deletePedidoById,
     updatePedido
 };

@@ -8,8 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const cervezaRoutes = require('./routes/cervezaRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const pedidoRoutes = require('./routes/pedidoRoutes');
-
-const usuarioRouter = require('./routers/UsuarioRouter'); 
+const usuarioRouter = require('./routes/UsuarioRouter'); 
 
 app.use(cors());
 app.use(express.json());

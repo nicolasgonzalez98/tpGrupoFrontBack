@@ -77,6 +77,7 @@ export class AdministrarPedidosComponent {
       rejectLabel: 'No',
       accept: () => {
         this.aceptarPedido(pedido);
+        this._confirmationService.close();
       }
     });
   }
@@ -96,12 +97,18 @@ export class AdministrarPedidosComponent {
       rejectLabel: 'No',
       accept: () => {
         this.rechazarPedido(pedido);
+        this._confirmationService.close();
       }
     });
   }
 
   private actualizarPedidoEnBackend(pedido: IAdminPedido) {
-    this._pedidosService.updatePedido(pedido._id, pedido).subscribe({
+    const usuario = this._authService.getUser();
+    const body = {
+      estado: pedido.estado,
+      aprobado_por: usuario!.id
+    };
+    this._pedidosService.updatePedido(pedido._id, body).subscribe({
       next: updatedPedido => {
         this._messageService.add({
           severity: 'success',
@@ -116,6 +123,27 @@ export class AdministrarPedidosComponent {
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo actualizar el pedido'
+        });
+      }
+    });
+  }
+
+  eliminarPedido(pedidoId: string) {
+    this._pedidosService.deletePedidoById(pedidoId).subscribe({
+      next: () => {
+        this._messageService.add({
+          severity: 'success',
+          summary: 'Eliminado',
+          detail: 'Pedido eliminado correctamente'
+        });
+        this.ngOnInit();
+      },
+      error: err => {
+        console.error('Error al eliminar el pedido:', err);
+        this._messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar el pedido'
         });
       }
     });
