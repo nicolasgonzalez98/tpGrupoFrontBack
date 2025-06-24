@@ -3,9 +3,11 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from './layout/layout.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LoginComponent } from './components/login/login.component';
-import { StockComponent } from './components/stock/stock.component';
 import { AdminHomeComponent } from '../app/components/admin/admin.component';
 import { AdminDashboardComponent } from '../app/components/admin-dashboard/admin-dashboard.component';
+import { StockComponent } from './components/stock/stock.component';
+
+//Guards
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
 import { AdminGuard } from './guards/admin.guard';
@@ -26,6 +28,8 @@ export const routes: Routes = [
       { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
       { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
       { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
+      { path: 'admin', component: AdminHomeComponent,canActivate: [AdminGuard] }, 
+      { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AdminGuard] },
       { path: '**', redirectTo:''}
     ]
   }
@@ -35,6 +39,5 @@ export const routes: Routes = [
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-
-export class AppRoutingModule {}
+export class AppRoutingModule { }
 

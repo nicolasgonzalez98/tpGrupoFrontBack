@@ -1,5 +1,23 @@
 const Usuario = require('../models/Usuario');
 
+exports.createEmpleado = async (userData) => {
+    try {
+        console.log(`REPOSITORY - createUser - userData: ${JSON.stringify(userData)}`);
+        const user = new Usuario(userData);
+
+        await user.save();
+        console.log("REPOSITORY - createUser: Usuario guardado exitosamente."); 
+        console.log(user); 
+        return user;
+
+    } catch (error) {
+        console.error("REPOSITORY - createUser - Error:", error); 
+        throw new Error("Error al intentar crear el nuevo usuario: " + error.message);
+    }
+};
+
+
+
 //metodo get para traer a todos los usuarios
 exports.getAllUsuariosRepository = async () => {
     try {
@@ -31,3 +49,4 @@ exports.updateUsuario = async (id, updateData) => {
         throw new Error(`Error al actualizar el usuario con ID ${id}: ${error.message}`);
     }
 };
+
