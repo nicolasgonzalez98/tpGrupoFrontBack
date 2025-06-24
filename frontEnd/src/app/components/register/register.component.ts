@@ -45,7 +45,7 @@ export class RegisterComponent {
       console.log(payload)
       try {
         const res = await this.authService.register(payload);
-
+        console.log(res)
         this.successMessage = 'Usuario registrado correctamente';
         this.registerForm.reset();
         if(!this.isAdminCreatingEmployee){

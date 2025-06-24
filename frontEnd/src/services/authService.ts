@@ -29,7 +29,7 @@ export class AuthService {
         return user ? JSON.parse(user) as IUsuario : null;
     }
 
-    async register(data: { nombre: string; email: string; password: string }): Promise<{ message: string; user: IUsuario }> {
+    async register(data: any){
         try {
             const response = await axios.post(`${this.apiUrl}/register`, data);
             return response.data;

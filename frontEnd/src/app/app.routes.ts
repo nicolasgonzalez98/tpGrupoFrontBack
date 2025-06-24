@@ -25,11 +25,12 @@ export const routes: Routes = [
       { path: '', component: HomeComponent, canActivate: [AuthGuard] },
       { path: 'register', component: RegisterComponent, canActivate: [GuestGuard]},
       { path: 'login', component: LoginComponent, canActivate: [GuestGuard]},
-      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard]},
-      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard]},
-      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard]},
-      { path: 'admin', component: AdminHomeComponent,canActivate: [AdminGuard] }, 
-      { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AdminGuard] },
+      { path: "stock", component: CervezasComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
+      { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
+      { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard, AdminGuard, EmpleadoGuard]},
+      { path: 'admin', component: AdminHomeComponent,canActivate: [AuthGuard, AdminGuard] }, 
+      { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AuthGuard, AdminGuard] },
+      { path: 'admin/crear-empleado', component: RegisterComponent, canActivate: [AuthGuard, AdminGuard]},
       { path: '**', redirectTo:''}
     ]
   }

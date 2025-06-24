@@ -1,6 +1,12 @@
 <div class="flex justify-center  min-h-screen items-start">
   <div class="bg-gray-100 p-8 rounded-md shadow-md w-full max-w-md">
-    <h2 class="text-xl font-bold mb-6 text-center">Registro</h2>
+    <h2 class="text-xl font-bold mb-6 text-center">
+      {{ isAdminCreatingEmployee ? 'Registrar Empleado' : 'Registro de Usuario' }}
+    </h2>
+
+    <p *ngIf="isAdminCreatingEmployee" class="text-sm text-gray-600 text-center mb-4">
+      Completá los datos para dar de alta un nuevo empleado.
+    </p>
     
     <form [formGroup]="registerForm" (ngSubmit)="onRegister()" >
       <div class="mb-4">
@@ -30,13 +36,15 @@
 
       <div class="mb-2">
         <p *ngIf="errorMessage" class="text-red-500 mt-2">{{ errorMessage }}</p>
-        <p *ngIf="successMessage" class="text-green-500">{{ successMessage }}</p>
       </div>  
 
-      <button pButton type="submit" label="Registrarse" class="w-full"></button>
+      <button pButton type="submit" 
+              [label]="isAdminCreatingEmployee ? 'Registrar Empleado' : 'Registrarse'" 
+              class="w-full">
+      </button>
     </form>
 
-    <div class="mt-4 text-center">
+    <div class="mt-4 text-center" *ngIf="!isAdminCreatingEmployee">
         <p class="text-sm text-gray-600">
             ¿Ya tenés una cuenta?
             <a href="/login" class="text-blue-600 hover:underline font-medium">Ingresa acá</a>
