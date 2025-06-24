@@ -24,7 +24,7 @@ export class AuthService {
         return token !== null && token !== '';
     }
 
-    private getUserFromStorage(): IUsuario | null {
+    public getUserFromStorage(): IUsuario | null {
         const user = localStorage.getItem('user');
         return user ? JSON.parse(user) as IUsuario : null;
     }

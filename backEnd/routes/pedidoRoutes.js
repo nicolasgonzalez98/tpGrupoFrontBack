@@ -8,6 +8,8 @@ router.get('/', pedidoController.getAllPedidos);
 
 router.get('/:id', pedidoController.getPedidoById);
 
+router.get('/usuario/:usuarioId', pedidoController.getPedidosByUsuario);
+
 router.delete('/:id', pedidoController.deletePedidoById);
 
 router.patch('/:id', pedidoController.updatePedido);

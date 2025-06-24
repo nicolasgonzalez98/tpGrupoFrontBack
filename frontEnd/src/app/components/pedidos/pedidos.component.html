@@ -1,20 +1,63 @@
-@for (cerveza of cervezas; track $index) {
+<div class="flex items-center justify-between mb-6">
+    <div class="flex-1 flex justify-center">
+        <h1 class="text-3xl font-bold text-center">Tienda Cerveza</h1>
+    </div>
+    <div>
+        <p-button (click)="visible = true" icon="pi pi-shopping-cart" class="text-2xl" [rounded]="true"></p-button>
+    </div>
+</div>
 
-    <p-card [style]="{ width: '25rem', overflow: 'hidden' }">
-        <ng-template #header>
-            <img alt="Card" class="w-full" src="https://primefaces.org/cdn/primeng/images/card-ng.jpg" />
-        </ng-template>
-        <ng-template #title> Advanced Card </ng-template>
-        <ng-template #subtitle> Card subtitle </ng-template>
-        <p>
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore sed consequuntur error repudiandae numquam deserunt
-            quisquam repellat libero asperiores earum nam nobis, culpa ratione quam perferendis esse, cupiditate neque quas!
-        </p>
-        <ng-template #footer>
-            <div class="flex gap-4 mt-1">
-                <p-button label="Cancel" severity="secondary" class="w-full" [outlined]="true" styleClass="w-full" />
-                <p-button label="Save" class="w-full" styleClass="w-full" />
-            </div>
-        </ng-template>
-    </p-card>
-}
+<div class="flex flex-wrap gap-6 justify-center">
+  @for (cerveza of cervezas; track $index) {
+    @if(cerveza._id) {
+        <p-card class="mb-6 p-shadow-4" [ngClass]="'w-80'">
+            <ng-template #title> {{ cerveza.nombre }} </ng-template>
+            <ng-template #subtitle> {{ cerveza.tipo }} </ng-template>
+        <div>
+            <strong>Stock actual:</strong> {{ cerveza.stock_actual }}
+        </div>
+        @if (cerveza.stock_actual > cerveza.stock_minimo) {
+            <button pButton type="button" label="Agregar al carrito"
+                class="mt-2 w-full"
+                (click)="agregarCervezaPedido(cerveza._id)">
+            </button>
+        } @else {
+            <div class="text-red-500 mt-2">Sin Stock</div>
+        }
+        </p-card>
+    }
+  }
+</div>
+
+<p-drawer header="Carrito" [(visible)]="visible" styleClass="!w-full md:!w-80 lg:!w-[30rem]">
+    @if (pedido && pedido.cervezas.length > 0) {
+        <div class="flex flex-col mb-6">
+            <h2 class="text-lg font-semibold mb-4">Carrito de Pedidos</h2>
+            @for (item of pedidoCervezasDetallado; track $index) {
+                <div class="mb-5 border-b pb-4">
+                    <div class="font-bold text-lg mb-1">{{ item.nombre }}</div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-gray-600">Tipo: {{ item.tipo }}</span>
+                        <button 
+                            pButton 
+                            type="button" 
+                            icon="pi pi-trash" 
+                            class="p-button-danger p-button-sm"
+                            (click)="eliminarCervezaPedido(item.cerveza)">
+                            Quitar
+                        </button>
+                    </div>
+                    <div class="mb-1">Cantidad:</div>
+                    <div class="flex items-center gap-3">
+                        <button pButton icon="pi pi-minus" (click)="cambiarCantidadCerveza(item.cerveza, Math.max(1, item.cantidad - 1))"></button>
+                        <span class="px-3">{{ item.cantidad }}</span>
+                        <button pButton icon="pi pi-plus" (click)="cambiarCantidadCerveza(item.cerveza, item.cantidad + 1)"></button>
+                    </div>
+                </div>
+            }
+        </div>
+        <button pButton type="button" label="Confirmar pedido" class="w-full mt-3" (click)="createPedido()"></button>   
+    } @else {
+        <div class="text-center text-gray-500 mt-5">No hay cervezas en el carrito.</div>
+    }
+</p-drawer>

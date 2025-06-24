@@ -12,7 +12,7 @@ export class EmpleadoGuard implements CanActivate {
   canActivate(): boolean {
     const usuario: IUsuario | null = this.authService.getUser();
 
-    if (usuario && usuario.rol === Rol.Empleado) {
+    if (usuario && usuario.rol === Rol.Empleado ) {
       return true;
     } else {
       this.router.navigate(['/']); 

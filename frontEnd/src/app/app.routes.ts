@@ -10,13 +10,18 @@ import { StockComponent } from './components/stock/stock.component';
 //Guards
 import { AuthGuard } from './guards/auth.guard';
 import { GuestGuard } from './guards/guest.guard';
-import { AdminGuard } from './guards/admin.guard';
 import { EmpleadoGuard } from './guards/empleado.guard';
-import { ClienteGuard } from './guards/cliente.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { RoleGuard } from './guards/role.guard';
+
 import { CervezasComponent } from './components/stock/cervezas/cervezas.component';
 import { CervezaFormComponent } from './components/stock/cerveza-form/cerveza-form.component';
 import { HomeComponent } from './components/home/home.component';
-import { RoleGuard } from './guards/role.guard';
+
+import { AdministrarPedidosComponent } from './components/stock/administrar-pedidos/administrar-pedidos.component';
+import { MisPedidosComponent } from './components/pedidos/mis-pedidos/mis-pedidos.component';
+import { PedidosComponent } from './components/pedidos/pedidos.component';
+
 
 export const routes: Routes = [
   {
@@ -32,6 +37,9 @@ export const routes: Routes = [
       { path: 'admin', component: AdminHomeComponent,canActivate: [AuthGuard, AdminGuard] }, 
       { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AuthGuard, AdminGuard] },
       { path: 'admin/crear-empleado', component: RegisterComponent, canActivate: [AuthGuard, AdminGuard]},
+      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent, canActivate: [AuthGuard]},
+      { path: 'pedidos', component: PedidosComponent, canActivate: [AuthGuard] },
+      { path: 'pedidos/mis-pedidos', component: MisPedidosComponent, canActivate: [AuthGuard] },
       { path: '**', redirectTo:''}
     ]
   }

@@ -48,7 +48,7 @@ export class CervezaFormComponent implements OnInit {
     this.id = this.route.snapshot.paramMap.get('id') || undefined;
 
     if (this.id) {
-      this.cervezaService.getById(this.id).subscribe({
+      this.cervezaService.getCervezaById(this.id).subscribe({
         next: (data) => this.cerveza = data,
         error: () => {
           this.error = 'No se pudo cargar la cerveza.';
@@ -90,14 +90,14 @@ export class CervezaFormComponent implements OnInit {
     if (!this.validar()) return;
 
     if (this.id) {
-      this.cervezaService.update(this.id, this.cerveza).subscribe({
+      this.cervezaService.updateCerveza(this.id, this.cerveza).subscribe({
         next: () => this.router.navigate(['/stock'], { queryParams: { editado: true } }),
         error: (err) => {
           this.error = 'Error actualizando la cerveza.';
         }
       });
     } else {
-      this.cervezaService.create(this.cerveza).subscribe({
+      this.cervezaService.createCerveza(this.cerveza).subscribe({
         next: () => this.router.navigate(['/stock'], { queryParams: { creado: true } }),
         error: (err) => {
           this.error = 'Error creando la cerveza.';

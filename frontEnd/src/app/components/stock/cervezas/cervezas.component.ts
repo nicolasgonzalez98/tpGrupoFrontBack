@@ -73,7 +73,7 @@ export class CervezasComponent implements OnInit {
   /////////////////////////////////////////////////
 
   getAllCervezas() {
-    this._cervezaService.getAll().subscribe({
+    this._cervezaService.getAllCervezas().subscribe({
       next: data => {
         this.cervezas = data;
         this.error = "";
@@ -90,7 +90,7 @@ export class CervezasComponent implements OnInit {
 
   
   deleteCerveza(id: string) {
-    this._cervezaService.delete(id).subscribe({
+    this._cervezaService.deleteCervezaById(id).subscribe({
       next: data => {
         this.getAllCervezas();
       },

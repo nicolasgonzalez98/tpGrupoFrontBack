@@ -32,10 +32,19 @@ const updateCerveza = async (id, updateData) => {
   );
 };
 
+const descontarStockActualById = async (id, cantidad) => {
+    return await Cerveza.findByIdAndUpdate(
+        id,
+        { $inc: { stock_actual: -cantidad } },
+        { new: true }
+    );
+};
+
 module.exports = {
   createCerveza,
   getCervezaById,
   getAllCervezas,
+  descontarStockActualById,
   deleteCervezaById,
   updateCerveza
 };

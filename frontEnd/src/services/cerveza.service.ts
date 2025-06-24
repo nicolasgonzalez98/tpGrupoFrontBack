@@ -11,23 +11,23 @@ export class CervezaService {
 
   constructor(private _httpClient: HttpClient) {}
 
-  public getAll(): Observable<ICerveza[]> {
+  getAllCervezas(): Observable<ICerveza[]> {
     return this._httpClient.get<ICerveza[]>(`${this.url}`);
   }
 
-  public getById(id: string): Observable<ICerveza> {
+  getCervezaById(id: string): Observable<ICerveza> {
     return this._httpClient.get<ICerveza>(`${this.url}/${id}`);
   }
 
-  public create(cerveza: ICerveza): Observable<ICerveza> {
+  createCerveza(cerveza: ICerveza): Observable<ICerveza> {
     return this._httpClient.post<ICerveza>(`${this.url}/stock`, cerveza);
   }
 
-  public update(id: string, cerveza: Partial<ICerveza>): Observable<ICerveza> {
-    return this._httpClient.patch<ICerveza>(`${this.url}/stock/${id}`, cerveza);
+  updateCerveza(id: string, updateData: Partial<ICerveza>): Observable<ICerveza> {
+    return this._httpClient.patch<ICerveza>(`${this.url}/stock/${id}`, updateData);
   }
 
-  public delete(id: string): Observable<ICerveza> {
+  deleteCervezaById(id: string): Observable<ICerveza> {
     return this._httpClient.delete<ICerveza>(`${this.url}/stock/${id}`);
   }
 }
