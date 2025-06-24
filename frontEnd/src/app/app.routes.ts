@@ -21,6 +21,7 @@ import { HomeComponent } from './components/home/home.component';
 import { AdministrarPedidosComponent } from './components/stock/administrar-pedidos/administrar-pedidos.component';
 import { MisPedidosComponent } from './components/pedidos/mis-pedidos/mis-pedidos.component';
 import { PedidosComponent } from './components/pedidos/pedidos.component';
+import { ClienteGuard } from './guards/cliente.guard';
 
 
 export const routes: Routes = [
@@ -37,9 +38,9 @@ export const routes: Routes = [
       { path: 'admin', component: AdminHomeComponent,canActivate: [AuthGuard, AdminGuard] }, 
       { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AuthGuard, AdminGuard] },
       { path: 'admin/crear-empleado', component: RegisterComponent, canActivate: [AuthGuard, AdminGuard]},
-      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent, canActivate: [AuthGuard]},
-      { path: 'pedidos', component: PedidosComponent, canActivate: [AuthGuard] },
-      { path: 'pedidos/mis-pedidos', component: MisPedidosComponent, canActivate: [AuthGuard] },
+      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent},
+      { path: 'pedidos', component: PedidosComponent, canActivate: [AuthGuard, ClienteGuard] },
+      { path: 'pedidos/mis-pedidos', component: MisPedidosComponent, canActivate: [AuthGuard, ClienteGuard] },
       { path: '**', redirectTo:''}
     ]
   }

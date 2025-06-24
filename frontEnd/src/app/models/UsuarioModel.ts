@@ -1,10 +1,14 @@
 export interface Usuario {
-  _id: string; 
+  _id: string;       
   nombre: string;
   email: string;
-  password?: string;
-  rol: 'admin' | 'empleado' | 'cliente';
+  password?: string; 
+  rol: Rol;
   activo: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+}
+
+export enum Rol{
+    Admin = "admin",
+    Empleado = "empleado",
+    Cliente = "cliente"
 }

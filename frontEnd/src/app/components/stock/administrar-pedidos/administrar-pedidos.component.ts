@@ -12,7 +12,7 @@ import { CardModule } from 'primeng/card';
   selector: 'app-administrar-pedidos',
   imports: [ConfirmDialogModule, CardModule],
   templateUrl: './administrar-pedidos.component.html',
-  styleUrl: './administrar-pedidos.component.css'
+  styleUrl: './administrar-pedidos.component.css',
 })
 export class AdministrarPedidosComponent {
   private _pedidosService = inject(PedidosService);
@@ -62,9 +62,10 @@ export class AdministrarPedidosComponent {
   }
 
   aceptarPedido(pedido: IAdminPedido) {
+    console.log(pedido)
     const actualizado = {
       ...pedido,
-      estado: 'aceptado',
+      estado: 'aprobado',
       fecha_aprobacion: new Date()
     };
     this.actualizarPedidoEnBackend(actualizado);
@@ -128,7 +129,7 @@ export class AdministrarPedidosComponent {
     });
   }
 
-  eliminarPedido(pedidoId: string) {
+  public eliminarPedido(pedidoId: string) {
     this._pedidosService.deletePedidoById(pedidoId).subscribe({
       next: () => {
         this._messageService.add({

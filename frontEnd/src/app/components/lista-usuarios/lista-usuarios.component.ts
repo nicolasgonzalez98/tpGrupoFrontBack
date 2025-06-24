@@ -8,9 +8,11 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext'; 
 import { ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms'; 
 import { ButtonModule } from 'primeng/button'; 
-import { IUsuario, Rol } from '../../models/usuario.models'; 
+import { Rol } from '../../models/usuario.models'; 
 import { catchError, map } from 'rxjs/operators'; 
 import { of } from 'rxjs'; 
+import { Usuario } from '../../models/UsuarioModel';
+import { IUsuario } from '../../models/usuario.models';
 
 @Component({
   selector: 'app-lista-usuarios',
@@ -27,11 +29,11 @@ import { of } from 'rxjs';
   styleUrls: ['./lista-usuarios.component.css']
 })
 export class ListaUsuariosComponent implements OnInit {
-  usuarios: IUsuario[] = [];
+  usuarios: Usuario[] = [];
 
   displayEditModal: boolean = false; 
   editUserForm!: FormGroup; 
-  selectedUser: IUsuario | null = null; 
+  selectedUser: Usuario | null = null; 
   editErrorMessage: string = ''; 
 
   constructor(private usuarioService: UsuarioService, private fb: FormBuilder) { } 
@@ -48,7 +50,7 @@ export class ListaUsuariosComponent implements OnInit {
 
   getUsuarios(): void {
     this.usuarioService.getUsuarios().subscribe(
-      (data: IUsuario[]) => {
+      (data: Usuario[]) => {
         this.usuarios = data.map(user => ({
           ...user,
           activo: !!user.activo 
@@ -66,7 +68,7 @@ export class ListaUsuariosComponent implements OnInit {
     );
   }
 
-  openEditModal(usuario: IUsuario): void {
+  openEditModal(usuario: Usuario): void {
     this.selectedUser = { ...usuario }; 
     this.editUserForm.patchValue({ 
       _id: this.selectedUser._id, 
@@ -98,13 +100,13 @@ export class ListaUsuariosComponent implements OnInit {
         return;
     }
 
-    const partialData: Partial<IUsuario> = { 
+    const partialData: Partial<Usuario> = { 
       nombre: this.editUserForm.get('nombre')?.value,
       email: this.editUserForm.get('email')?.value,
     };
 
     try {
-      const usuarioActualizado: IUsuario | undefined = await this.usuarioService.updateUsuario(userId, partialData).toPromise();
+      const usuarioActualizado: Usuario | undefined = await this.usuarioService.updateUsuario(userId, partialData).toPromise();
       
       if (usuarioActualizado) { 
         const index = this.usuarios.findIndex(u => u._id === usuarioActualizado._id); 
@@ -125,7 +127,7 @@ export class ListaUsuariosComponent implements OnInit {
     }
   }
 
-  async toggleActivo(usuario: IUsuario): Promise<void> {
+  async toggleActivo(usuario: Usuario): Promise<void> {
     if (!usuario._id) { 
         console.error("Error: El _ID del usuario es undefined o nulo al cambiar estado activo.");
         alert("No se pudo cambiar el estado activo: ID de usuario no encontrado.");
@@ -133,7 +135,7 @@ export class ListaUsuariosComponent implements OnInit {
     }
     const nuevoEstadoActivo = !usuario.activo; 
     try {
-      const updatedUser: IUsuario | undefined = await this.usuarioService.updateUsuario(usuario._id, { activo: nuevoEstadoActivo }).toPromise(); 
+      const updatedUser: Usuario | undefined = await this.usuarioService.updateUsuario(usuario._id, { activo: nuevoEstadoActivo }).toPromise(); 
       if (updatedUser) {
         const index = this.usuarios.findIndex(u => u._id === updatedUser._id); 
         if (index !== -1) {
@@ -150,7 +152,7 @@ export class ListaUsuariosComponent implements OnInit {
     }
   }
 
-  async cambiarRol(usuario: IUsuario, nuevoRolString: string): Promise<void> {
+  async cambiarRol(usuario: Usuario, nuevoRolString: string): Promise<void> {
     const nuevoRol: Rol = nuevoRolString as Rol;
 
     if (usuario.rol === nuevoRol) {
@@ -164,7 +166,7 @@ export class ListaUsuariosComponent implements OnInit {
         return;
     }
     try {
-      const updatedUser: IUsuario | undefined = await this.usuarioService.updateUsuario(usuario._id, { rol: nuevoRol }).toPromise(); 
+      const updatedUser: Usuario | undefined = await this.usuarioService.updateUsuario(usuario._id, { rol: nuevoRol }).toPromise(); 
       if (updatedUser) {
         const index = this.usuarios.findIndex(u => u._id === updatedUser._id); 
         if (index !== -1) {

@@ -10,7 +10,7 @@ export class AdminGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): boolean {
-    const usuario: IUsuario | null = this.authService.getUserFromStorage();
+    const usuario: IUsuario | null = this.authService.getUser();
 
     if (usuario && usuario.rol === Rol.Admin) {
       return true;
