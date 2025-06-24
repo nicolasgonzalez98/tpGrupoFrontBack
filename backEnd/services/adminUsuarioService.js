@@ -34,7 +34,7 @@ exports.createEmpleadoService = async ({ nombre, email, password }) => {
 
 exports.getAllUsuariosService = async () => {
     try {
-        const usuarios = await usuarioRepository.getAllUsuariosRepository(); 
+        const usuarios = await adminUsuarioRepository.getAllUsuariosRepository(); 
         console.log("SERVICE - getAllUsuariosService: Usuarios obtenidos del repositorio.");
         return usuarios; 
     } catch (error) {
@@ -46,7 +46,7 @@ exports.getAllUsuariosService = async () => {
 exports.updateUsuarioService = async (id, updateData) => {
     try {
         console.log(`SERVICE updateUsuarioService - ID: ${id}, Datos: ${JSON.stringify(updateData)}`);
-        return await usuarioRepository.updateUsuario(id, updateData);
+        return await adminUsuarioRepository.updateUsuario(id, updateData);
     } catch (error) {
         console.log("Error en updateUsuario:" + error);
         throw error("Error en el service" + error)

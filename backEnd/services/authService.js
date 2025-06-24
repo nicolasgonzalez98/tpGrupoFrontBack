@@ -4,7 +4,8 @@ const { createUser, findUserByEmail } = require('../repository/userRepository');
 
 const SECRET_KEY = "TpCervezas"
 
-const register = async ({ nombre, email, password }) => {
+const register = async ({ nombre, email, password, rol }) => {
+    let newUser
     const existingUser = await findUserByEmail(email);
     if (existingUser){ 
       const error = new Error('El email ya está registrado');
@@ -13,11 +14,16 @@ const register = async ({ nombre, email, password }) => {
     };
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await createUser({ nombre, email, password: hashedPassword });
+
+    if(rol == "empleado"){
+      newUser = await createUser({ nombre, email, password: hashedPassword, rol: rol });  
+    }else{
+      newUser = await createUser({ nombre, email, password: hashedPassword });
+    }
 
     return {
       message: 'Usuario creado',
-      user: { id: newUser._id, email: newUser.email }
+      user: { id: newUser._id, email: newUser.email, rol: newUser.rol }
     };
 };
 
@@ -29,6 +35,12 @@ const login = async ({ email, password }) => {
         error.status = 404;
         throw error;
     };
+
+    if(!user.activo){
+      const error = new Error("El usuario no esta activo.")
+      error.status = 404;
+      throw error;
+    }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
