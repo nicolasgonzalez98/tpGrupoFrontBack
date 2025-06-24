@@ -22,9 +22,10 @@ app.use('/api/usuarios', usuarioRouter);
 
 app.use('/stock', stockRoutes);
 
+app.use('/pedido', pedidoRoutes);
+
 app.use('/', cervezaRoutes);
 
-app.use('/pedido', pedidoRoutes);
 
 app.listen(port, () => {
   console.log(`Servidor escuchando en http://localhost:${port}`);

@@ -8,11 +8,8 @@ const createPedido = async (pedidoData) => {
 }
 
 const getAllPedidos = async () => {
-    return await Pedido.find()
-        .populate('usuario_id', 'nombre')
-        .populate('aprobado_por', 'nombre')
-        .populate('cervezas.cerveza', 'nombre');
-};
+    return await Pedido.find().lean().exec();
+}
 
 const getPedidoById = async (id) => {
     return await Pedido.findOne({ _id: id });

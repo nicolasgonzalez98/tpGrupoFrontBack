@@ -8,8 +8,8 @@ const pedidoSchema = new mongoose.Schema({
   fecha_aprobacion: { type: Date, default: null },
   cervezas: [
     {
-      cerveza: { type: mongoose.Schema.Types.ObjectId, ref: 'Cerveza', required: true },
-      cantidad: { type: Number, required: true, min: 1 }
+      cerveza: { type: mongoose.Schema.Types.ObjectId, ref: 'cervezas', required: true },
+      cantidad: { type: Number, required: true }
     }
   ]
 }, { timestamps: true });

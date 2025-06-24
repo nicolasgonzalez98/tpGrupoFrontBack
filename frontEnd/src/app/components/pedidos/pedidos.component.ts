@@ -9,13 +9,13 @@ import { ICerveza } from '../../models/cerveza.models';
 import { IPedido } from '../../models/pedido.models';
 import { PedidosService } from '../../../services/pedidos.service';
 import { CervezaService } from '../../../services/cerveza.service';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-pedidos',
   imports: [CardModule, ButtonModule, CommonModule, DrawerModule],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.css',
-  providers: [MessageService]
 })
 
 export class PedidosComponent implements OnInit {
@@ -28,6 +28,7 @@ export class PedidosComponent implements OnInit {
   private _cervezaService = inject(CervezaService);
   private _authService = inject(AuthService);
   private _pedidosService = inject(PedidosService);
+  private _confirmationService = inject(ConfirmationService);
   messageService = inject(MessageService);
 
   ngOnInit() {
@@ -63,9 +64,9 @@ export class PedidosComponent implements OnInit {
     };
   }
 
-  agregarCervezaPedido(cervezaID: string, cantidad: number) {
+  agregarCervezaPedido(cervezaID: string) {
     if (!this.pedido) return;
-      const yaEnCarrito = this.pedido.cervezas.some(c => c.cerveza === cervezaID);
+    const yaEnCarrito = this.pedido.cervezas.some(c => c.cerveza === cervezaID);
     if (yaEnCarrito) {
       this.messageService.add({
         severity: 'warn',
@@ -76,42 +77,58 @@ export class PedidosComponent implements OnInit {
     }
     this.pedido.cervezas.push({
       cerveza: cervezaID,
-      cantidad: cantidad
+      cantidad: 1
     });
+  }
+
+  cambiarCantidadCerveza(cervezaID: string, nuevaCantidad: number) {
+  if (!this.pedido) return;
+  const item = this.pedido.cervezas.find(c => c.cerveza === cervezaID);
+  if (item && nuevaCantidad > 0) {
+    item.cantidad = nuevaCantidad;
+  }
 }
 
-  eliminarCervezaPedido(cervezaid: string) {
-    if (!this.pedido || !this.pedido.cervezas) return;
-
-    this.pedido.cervezas = this.pedido.cervezas.splice(
-      this.pedido.cervezas.findIndex(c => c.cerveza === cervezaid)
-    )
-
-  //   const originalLength = this.pedido.cervezas.length;
-  // const filtradas = this.pedido.cervezas.filter(c => c.cerveza !== cervezaid);
-
-  // // Solo reasigna si realmente eliminó algo
-  // if (filtradas.length < originalLength) {
-  //   this.pedido.cervezas = filtradas;
-  //   console.log('Cerveza eliminada del pedido:', this.pedido.cervezas);
-  // } else {
-  //   console.log('No se encontró la cerveza a eliminar, el array queda igual.');
-  // }
-  
-    console.log('Cerveza eliminada del pedido:', this.pedido!.cervezas);
-  }
+eliminarCervezaPedido(cervezaid: string) {
+  this._confirmationService.confirm({
+    message: '¿Está seguro que desea eliminar la cerveza?',
+    header: 'Confirmar eliminación',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Sí',
+    rejectLabel: 'No',
+    accept: () => {
+      if (!this.pedido || !this.pedido.cervezas) return;
+      this.pedido.cervezas = this.pedido.cervezas.filter(c => c.cerveza !== cervezaid);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Eliminado',
+        detail: 'Cerveza eliminada del pedido'
+      });
+      this._confirmationService.close();
+    }
+  });
+}
 
   createPedido() {
     if (!this.pedido) return;
     this._pedidosService.createPedido(this.pedido).subscribe({
       next: pedidoCreado => {
-        console.log('Pedido confirmado:', pedidoCreado);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Pedido Creado',
+          detail: `Pedido creado`
+        });
         if (this.pedido) {
         this.pedido.cervezas = [];
         }
       },
       error: err => {
-        console.error('Error al confirmar pedido:', err);
+        console.error('Error al crear el pedido:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear el pedido'
+        });
       }
     });
   }
