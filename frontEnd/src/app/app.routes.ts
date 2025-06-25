@@ -35,10 +35,10 @@ export const routes: Routes = [
       { path: "stock", component: CervezasComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'empleado'] }},
       { path: 'stock/editarCerveza/:id', component: CervezaFormComponent, canActivate: [AuthGuard, RoleGuard], data:{ roles: ['admin', 'empleado']}},
       { path: 'stock/crearCerveza',component: CervezaFormComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'empleado']}},
-      { path: 'admin', component: AdminHomeComponent,canActivate: [AuthGuard, AdminGuard] }, 
+      { path: 'admin', component: AdminHomeComponent, canActivate: [AuthGuard, AdminGuard] }, 
       { path: 'admin/usuarios', component: AdminDashboardComponent,canActivate: [AuthGuard, AdminGuard] },
       { path: 'admin/crear-empleado', component: RegisterComponent, canActivate: [AuthGuard, AdminGuard]},
-      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent},
+      { path: 'stock/administrar-pedidos',component: AdministrarPedidosComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'empleado'] }},
       { path: 'pedidos', component: PedidosComponent, canActivate: [AuthGuard, ClienteGuard] },
       { path: 'pedidos/mis-pedidos', component: MisPedidosComponent, canActivate: [AuthGuard, ClienteGuard] },
       { path: '**', redirectTo:''}

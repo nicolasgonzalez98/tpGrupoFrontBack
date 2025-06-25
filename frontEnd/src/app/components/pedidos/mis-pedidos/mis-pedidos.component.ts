@@ -22,7 +22,7 @@ export class MisPedidosComponent {
 
   ngOnInit() {
     const usuario = this._authService.getUser();
-    if (!usuario || !usuario.id) {
+    if (!usuario || !usuario._id) {
       this._messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -32,7 +32,7 @@ export class MisPedidosComponent {
       return;
     }
 
-    this._pedidosService.getPedidosByUsuario(usuario.id).subscribe({
+    this._pedidosService.getPedidosByUsuario(usuario._id).subscribe({
       next: (pedidos) => {
         this.misPedidos = pedidos;
       },

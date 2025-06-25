@@ -40,7 +40,7 @@ export class AdministrarPedidosComponent {
     });
 
     const usuario = this._authService.getUser();
-    if (!usuario || !usuario.id) {
+    if (!usuario || !usuario._id) {
       this._messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -54,7 +54,7 @@ export class AdministrarPedidosComponent {
       _id: '',
       usuario_id: '',
       estado: '',
-      aprobado_por: usuario.id,
+      aprobado_por: usuario._id,
       fecha_aprobacion: undefined as any,
       cervezas: [],
       fecha: undefined as any
@@ -107,7 +107,7 @@ export class AdministrarPedidosComponent {
     const usuario = this._authService.getUser();
     const body = {
       estado: pedido.estado,
-      aprobado_por: usuario!.id
+      aprobado_por: usuario!._id
     };
     this._pedidosService.updatePedido(pedido._id, body).subscribe({
       next: updatedPedido => {

@@ -17,6 +17,7 @@ export class NavbarComponent {
   //Variables para funcionamiento de Menu
   showStockMenu = false;
   showAdminMenu = false;
+  showClientsMenu = false;
 
   showMenus: Record<string, boolean> = {};
 

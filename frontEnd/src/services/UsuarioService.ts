@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-//import { IUsuario } from '../app/models/usuario.models';
-import { Usuario } from '../app/models/UsuarioModel';
+import { IUsuario } from '../app/models/usuario.models';
 
 @Injectable({
   providedIn: 'root'
@@ -13,12 +12,12 @@ export class UsuarioService {
   constructor(private http: HttpClient) { }
 
   // Tipamos el Observable para que retorne un array de objetos Usuario
-  getUsuarios(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(this.apiUrl);
+  getUsuarios(): Observable<IUsuario[]> {
+    return this.http.get<IUsuario[]>(this.apiUrl);
   }
 
-  updateUsuario(id: string, partialData: Partial<Usuario>): Observable<Usuario> {
-     return this.http.patch<Usuario>(`${this.apiUrl}/${id}`, partialData);
+  updateUsuario(id: string, partialData: Partial<IUsuario>): Observable<IUsuario> {
+     return this.http.patch<IUsuario>(`${this.apiUrl}/${id}`, partialData);
   }
 }
 

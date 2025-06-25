@@ -48,7 +48,7 @@ export class PedidosComponent implements OnInit {
     });
 
     const usuario = this._authService.getUser();
-    if (!usuario || !usuario.id) {
+    if (!usuario || !usuario._id) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -59,7 +59,7 @@ export class PedidosComponent implements OnInit {
     }
 
     this.pedido = {
-      usuario_id: usuario.id,
+      usuario_id: usuario._id,
       cervezas: []
     };
   }

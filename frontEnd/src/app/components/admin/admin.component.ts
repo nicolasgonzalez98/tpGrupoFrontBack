@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router'; 
+import { ActivatedRoute, Router } from '@angular/router'; 
 import { DialogModule } from 'primeng/dialog';
 
 @Component({
   selector: 'app-admin-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, DialogModule], 
+  imports: [CommonModule, DialogModule], 
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.css']
 })

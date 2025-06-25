@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { LayoutComponent } from "./layout/layout.component";
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/authService';
 import { NavbarComponent } from "./navbar/navbar.component";
-import { ListaUsuariosComponent } from '../app/components/lista-usuarios/lista-usuarios.component';
 import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { ConfirmationService } from 'primeng/api';
@@ -12,8 +11,7 @@ import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
-  imports: [LayoutComponent, CommonModule, RouterOutlet,
-    ListaUsuariosComponent, NavbarComponent ],
+  imports: [LayoutComponent, CommonModule, NavbarComponent ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
