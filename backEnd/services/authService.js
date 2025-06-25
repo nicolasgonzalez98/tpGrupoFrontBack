@@ -23,7 +23,7 @@ const register = async ({ nombre, email, password, rol }) => {
 
     return {
       message: 'Usuario creado',
-      user: { id: newUser._id, email: newUser.email, rol: newUser.rol }
+      user: { _id: newUser._id, email: newUser.email, rol: newUser.rol }
     };
 };
 
@@ -49,12 +49,12 @@ const login = async ({ email, password }) => {
         throw error;
     };
 
-    const token = jwt.sign({ id: user._id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
+    const token = jwt.sign({ _id: user._id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
 
     return {
       message: 'Login exitoso', 
       token, 
-      user: { id: user._id, email: user.email, nombre: user.nombre, rol: user.rol, activo: user.activo }
+      user: { _id: user._id, email: user.email, nombre: user.nombre, rol: user.rol, activo: user.activo }
     };
 };
 
