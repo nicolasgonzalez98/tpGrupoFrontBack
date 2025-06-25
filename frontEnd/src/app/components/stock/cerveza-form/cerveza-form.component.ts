@@ -7,7 +7,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import { CervezaService } from '../../../../services/cerveza.service';
-//import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-cerveza-form',

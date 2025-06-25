@@ -83,11 +83,6 @@ export class CervezasComponent implements OnInit {
       }
     });
   }
-
-  editar(cerveza: any) {
-    console.log('Editar', cerveza);
-  }
-
   
   deleteCerveza(id: string) {
     this._cervezaService.deleteCervezaById(id).subscribe({

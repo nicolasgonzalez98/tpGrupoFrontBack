@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { AuthService } from '../../services/authService';
-import { IUsuario } from '../models/usuario.models';
 
 
 @Injectable({
