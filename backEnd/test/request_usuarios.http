@@ -1,4 +1,4 @@
-<<<<<<<< HEAD:backEnd/test/peticiones_test.http
+
 //prueba de metodo GET para ver listado de usuarios
 GET http://127.0.0.1:3000/api/usuarios HTTP/1.1
 
@@ -26,7 +26,8 @@ Content-Type: application/json
   "nombre": "Nuevo Empleado",
   "email": "empleado.nuevo@example.com",
   "password": "passwordSegura123"
-========
+}
+
 //prueba de metodo GET para ver listado de usuarios
 GET http://127.0.0.1:3000/api/usuarios HTTP/1.1
 
@@ -44,5 +45,4 @@ Content-Type: application/json
 
 {
     "rol": "empleado"
->>>>>>>> gonza:backEnd/test/request_usuarios.http
 }
