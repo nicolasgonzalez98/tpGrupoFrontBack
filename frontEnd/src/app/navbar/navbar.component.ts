@@ -29,7 +29,8 @@ export class NavbarComponent {
       submenuKey: 'showStockMenu',
       submenu: [
         { label: 'Ver stock', path: '/stock', visible: () => this.isEmployee || this.isAdmin },
-        { label: 'Agregar cerveza', path: '/stock/crearCerveza', visible: () => this.isEmployee || this.isAdmin }
+        { label: 'Agregar cerveza', path: '/stock/crearCerveza', visible: () => this.isEmployee || this.isAdmin },
+        { label: "Administrar pedidos", path: '/stock/administrar-pedidos', visible: () => this.isEmployee || this.isAdmin }
       ]
     },
     {
@@ -39,6 +40,15 @@ export class NavbarComponent {
       submenu: [
         { label: 'Panel de admin', path: '/admin', visible: () => this.isAdmin },
         { label: 'Registrar empleado', path: '/admin/crear-empleado', visible: () => this.isAdmin }
+      ]
+    },
+    {
+      label: 'Pedidos',
+      visible: () => this.isClient,
+      submenuKey: 'showClientsMenu',
+      submenu: [
+        { label: 'Realizar pedido', path: '/pedidos', visible: () => this.isClient },
+        { label: 'Ver mis pedidos', path: '/pedidos/mis-pedidos', visible: () => this.isClient }
       ]
     }
   ];
