@@ -15,21 +15,22 @@
             <span class="text-red-400"> {{ pedido.estado }}</span>
           }
         </div>
-        <div class="mb-2"><strong>Fecha:</strong> {{ pedido.fecha }}</div>
+        <div class="mb-2"><strong>Fecha:</strong> {{ pedido.fecha | date: 'dd/MM/yyyy' }}</div>
         @if (pedido.estado === 'pendiente') {
           <div class="mb-2 text-yellow-400">Tu pedido está pendiente de aprobación.</div>
         } @else if (pedido.estado === 'aprobado') {
           <div class="mb-2 text-green-400">Tu pedido ha sido aprobado.</div>
-          <div class="mb-2"><strong>Fecha aprobación:</strong> {{ pedido.fecha_aprobacion }}</div>
+          <div class="mb-2"><strong>Fecha aprobación:</strong> {{ pedido.fecha_aprobacion | date: 'dd/MM/yyyy' }}</div>
         } @else if (pedido.estado === 'rechazado') {
           <div class="mb-2 text-red-400">Tu pedido ha sido rechazado.</div>
         }
         <div class="mb-2"><strong>Cervezas solicitadas:</strong>
-          <ul class="ml-4 list-disc">
-            @for(item of pedido.cervezas; track $index) {
-              <li>
-                <span class="font-mono">Id: {{ item.cerveza }}</span>
-                <span class="ml-2">Cantidad: <span class="font-bold">{{ item.cantidad }}</span></span>
+          <ul class="ml-4 mt-2 flex flex-col gap-2">
+            @for(cerveza of cervezasPorPedido[pedido._id]; track $index) {
+              <li class="bg-gray-900 rounded px-3 py-2">
+                <div><span class="font-semibold text-gray-300">Nombre: </span> <span class="font-bold">{{ cerveza.nombre }}</span></div>
+                <div><span class="font-semibold text-gray-300">Tipo: </span> <span class="font-bold">{{ cerveza.tipo }}</span></div>
+                <div><span class="font-semibold text-gray-300">Cantidad: </span> <span class="font-bold">{{ cerveza.cantidad }}</span></div>
               </li>
             }
           </ul>

@@ -1,7 +1,10 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { PedidosService } from '../../../../services/pedidos.service';
+import { CervezaService } from '../../../../services/cerveza.service';
 import { AuthService } from '../../../../services/authService';
 import { IAdminPedido } from '../../../models/adminPedido.models';
+import { ICerveza } from '../../../models/cerveza.models';
 import { MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
@@ -10,24 +13,40 @@ import { CardModule } from 'primeng/card';
 
 @Component({
   selector: 'app-administrar-pedidos',
-  imports: [ConfirmDialogModule, CardModule],
+  imports: [ConfirmDialogModule, CardModule, CommonModule],
   templateUrl: './administrar-pedidos.component.html',
   styleUrl: './administrar-pedidos.component.css',
 })
 export class AdministrarPedidosComponent {
   private _pedidosService = inject(PedidosService);
+  private _cervezaService = inject(CervezaService);
   private _authService = inject(AuthService);
   private _messageService = inject(MessageService);
   private _confirmationService = inject(ConfirmationService);
 
   adminPedidos: IAdminPedido[] = [];
   selectedPedido?: IAdminPedido;
+  cervezasPorPedido: { [pedidoId: string]: Array<ICerveza & { cantidad: number }> } = {};
+
 
   ngOnInit() {
     this._pedidosService.getAllPedidos().subscribe({
       next: pedidos => {
         this.adminPedidos = pedidos;
-        console.log('Pedidos cargados:', this.adminPedidos);
+        this.cervezasPorPedido = {};
+        for (const pedido of pedidos) {
+          this.cervezasPorPedido[pedido._id] = [];
+          for (const item of pedido.cervezas) {
+            this._cervezaService.getCervezaById(item.cerveza).subscribe({
+              next: (cerveza) => {
+                this.cervezasPorPedido[pedido._id].push({
+                  ...cerveza,
+                  cantidad: item.cantidad
+                });
+              }
+            });
+          }
+        }
       },
       error: err => {
         console.error('Error al cargar pedidos:', err);
@@ -35,7 +54,7 @@ export class AdministrarPedidosComponent {
         severity: 'error',
         summary: 'Error',
         detail: 'No se pudieron cargar los pedidos'
-      });
+        });
       }
     });
 
