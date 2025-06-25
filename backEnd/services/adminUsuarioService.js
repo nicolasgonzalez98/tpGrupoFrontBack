@@ -19,7 +19,7 @@ exports.createEmpleadoService = async ({ nombre, email, password }) => {
             nombre, 
             email, 
             password: hashedPassword, 
-            rol: 'empleado' // 
+            rol: 'empleado' 
         }; 
 
         const nuevoEmpleado = await adminUsuarioRepository.createEmpleado(empleadoData); 
