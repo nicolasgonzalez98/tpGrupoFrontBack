@@ -28,5 +28,6 @@ export class AdminHomeComponent {
             this.location.replaceState(this.router.url.split('?')[0]);
           }
         });
+        
       }
 }
