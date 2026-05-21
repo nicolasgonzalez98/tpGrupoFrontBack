@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"c:/Users/Admin/Desktop/Trabajo Practico Back y Front/tpGrupoFrontBack/docs\" \"c:/Users/Admin/Desktop/Trabajo Practico Back y Front/tpGrupoFrontBack/prompts\" -type f)",
+      "Read(//c/Users/Admin/Desktop/Trabajo Practico Back y Front/tpGrupoFrontBack/docs/**)",
+      "Bash(cp \"c:/Users/Admin/Desktop/Trabajo Practico Back y Front/tpGrupoFrontBack/docs/README.md\" \"c:/Users/Admin/Desktop/Trabajo Practico Back y Front/tpGrupoFrontBack/README.md\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Admin\\Desktop\\Trabajo Practico Back y Front\\tpGrupoFrontBack\\docs\\business",
+      "c:\\Users\\Admin\\Desktop\\Trabajo Practico Back y Front\\tpGrupoFrontBack\\docs\\database",
+      "c:\\Users\\Admin\\Desktop\\Trabajo Practico Back y Front\\tpGrupoFrontBack\\docs\\security",
+      "c:\\Users\\Admin\\Desktop\\Trabajo Practico Back y Front\\tpGrupoFrontBack"
+    ]
+  }
+}
