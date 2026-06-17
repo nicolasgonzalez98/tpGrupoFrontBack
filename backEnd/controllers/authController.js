@@ -14,7 +14,7 @@ const login= async (req, res) => {
     const result = await authService.login(req.body);
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Error al iniciar sesión' });
+    res.status(error.status || 500).json({ message: error.message || 'Error al iniciar sesión' });
   }
 };
 

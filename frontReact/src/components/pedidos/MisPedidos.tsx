@@ -58,7 +58,7 @@ export default function MisPedidos() {
           {misPedidos.map((pedido, i) => (
             <div
               key={pedido._id ?? i}
-              className="bg-gray-800 rounded-lg shadow-lg p-6 w-full sm:w-[350px] md:w-[400px] lg:w-[450px] mb-4 flex-shrink-0"
+              className="bg-gray-800 text-gray-100 rounded-lg shadow-lg p-6 w-full sm:w-[350px] md:w-[400px] lg:w-[450px] mb-4 flex-shrink-0"
             >
               <div className="mb-2 text-gray-300 text-sm">
                 Pedido ID: <span className="font-mono">{pedido._id}</span>

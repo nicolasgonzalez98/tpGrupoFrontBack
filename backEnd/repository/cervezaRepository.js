@@ -40,11 +40,33 @@ const descontarStockActualById = async (id, cantidad) => {
     );
 };
 
+// Descuento atómico y condicional: solo descuenta si hay stock suficiente.
+// Devuelve true si descontó, false si no había stock (evita sobreventa por concurrencia).
+const descontarStockSiHay = async (id, cantidad) => {
+    const actualizada = await Cerveza.findOneAndUpdate(
+        { _id: id, stock_actual: { $gte: cantidad } },
+        { $inc: { stock_actual: -cantidad } },
+        { new: true }
+    );
+    return actualizada !== null;
+};
+
+// Restituye stock (al rechazar/eliminar un pedido, o para revertir un descuento parcial).
+const restituirStock = async (id, cantidad) => {
+    return await Cerveza.findByIdAndUpdate(
+        id,
+        { $inc: { stock_actual: cantidad } },
+        { new: true }
+    );
+};
+
 module.exports = {
   createCerveza,
   getCervezaById,
   getAllCervezas,
   descontarStockActualById,
+  descontarStockSiHay,
+  restituirStock,
   deleteCervezaById,
   updateCerveza
 };

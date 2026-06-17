@@ -3,15 +3,20 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { PrimeReactProvider } from 'primereact/api';
 
-// PrimeReact: tema Lara + core + iconos.
-// Nota: el front Angular usa el preset "Aura" de PrimeNG 19. Aura solo existe en
-// PrimeReact 11 (hoy en alpha). En la versión estable (10.x) el equivalente visual
-// más cercano es "Lara" (predecesor directo de Aura). Se puede migrar a Aura cuando
-// PrimeReact 11 sea estable cambiando únicamente este import + PrimeReactProvider.
+// IMPORTANTE: el orden importa. Tailwind se carga PRIMERO para que su "preflight"
+// (reset que pone border:0 en todos los elementos) no pise los estilos de los
+// componentes de PrimeReact. El tema de PrimeReact se carga DESPUÉS y gana.
+import './index.css';
+
+// PrimeReact: tema Lara + core. (El front Angular usa el preset "Aura" de PrimeNG 19;
+// Aura solo existe en PrimeReact 11 —hoy en alpha—, así que en estable 10.x se usa
+// "Lara", su predecesor directo. Migrar a Aura = cambiar este import cuando v11 sea estable.)
 import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 
-import './index.css';
+// Configura los interceptores de Axios (adjunta el JWT, maneja 401). Debe ir antes del render.
+import './services/http';
+
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 

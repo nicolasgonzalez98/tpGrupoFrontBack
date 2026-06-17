@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const stockController = require('../controllers/stockController');
+const { verifyToken, requireRole } = require('../middlewares/auth');
+
+// Toda la gestión de stock es solo para admin/empleado.
+router.use(verifyToken, requireRole('admin', 'empleado'));
 
 router.post('/', stockController.createCerveza);
 

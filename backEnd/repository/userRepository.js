@@ -6,7 +6,8 @@ const createUser = async (userData) => {
 };
 
 const findUserByEmail = async (email) => {
-  return await User.findOne({ email });
+  // Coerción a string para evitar NoSQL injection (ej. { $ne: null } en el body).
+  return await User.findOne({ email: typeof email === 'string' ? email : '' });
 };
 
 module.exports = {

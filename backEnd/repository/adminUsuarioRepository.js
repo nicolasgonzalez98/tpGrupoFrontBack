@@ -2,51 +2,32 @@ const Usuario = require('../models/Usuario');
 
 exports.createEmpleado = async (userData) => {
     try {
-        console.log(`REPOSITORY - createUser - userData: ${JSON.stringify(userData)}`);
         const user = new Usuario(userData);
-
         await user.save();
-        console.log("REPOSITORY - createUser: Usuario guardado exitosamente."); 
-        console.log(user); 
         return user;
-
     } catch (error) {
-        console.error("REPOSITORY - createUser - Error:", error); 
+        console.error("REPOSITORY - createEmpleado - Error:", error.message);
         throw new Error("Error al intentar crear el nuevo usuario: " + error.message);
     }
 };
 
-
-
-//metodo get para traer a todos los usuarios
+// Trae todos los usuarios SIN el campo password (no exponer el hash).
 exports.getAllUsuariosRepository = async () => {
     try {
-        const usuarios = await Usuario.find(); 
-        console.log(usuarios); 
-        return usuarios;
+        return await Usuario.find().select('-password');
     } catch (error) {
-        console.error("Error en getAllUsuariosRepository:", error);
+        console.error("Error en getAllUsuariosRepository:", error.message);
         throw new Error("Error al traer los usuarios: " + error.message);
     }
 };
 
-//metodo para actualizar rol y activo de usuario (utilizamos el mismo metodo para ambos casos, mongoDB lo permite)
+// Actualiza un usuario. { new: true } devuelve el doc actualizado; runValidators valida el enum de rol.
 exports.updateUsuario = async (id, updateData) => {
     try {
-        console.log(`REPOSITORY Actualizando usuario - ID: ${id}, Datos: ${JSON.stringify(updateData)}`);
-
-        // Mongoose: Busca el documento por ID y actualiza solo los campos proporcionados en 'updateData'.
-        // { new: true }: Devuelve el documento *actualizado*.
-        // { runValidators: true }: Ejecuta las validaciones del esquema (ej. para el campo 'rol').
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
-
-        if (!usuarioActualizado) {
-            console.error("No existe ese usuario en la base de datos", error);
-        }
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).select('-password');
         return usuarioActualizado;
     } catch (error) {
-        console.error("[Usuario Repository] Error en updateUsuario:", error);
+        console.error("[Usuario Repository] Error en updateUsuario:", error.message);
         throw new Error(`Error al actualizar el usuario con ID ${id}: ${error.message}`);
     }
 };
-

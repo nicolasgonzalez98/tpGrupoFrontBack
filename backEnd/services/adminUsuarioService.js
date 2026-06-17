@@ -1,56 +1,49 @@
-const adminUsuarioRepository = require('../repository/adminUsuarioRepository'); 
+const adminUsuarioRepository = require('../repository/adminUsuarioRepository');
 const userRepository = require('../repository/userRepository')
 const bcrypt = require('bcrypt');
 
-exports.createEmpleadoService = async ({ nombre, email, password }) => { 
+exports.createEmpleadoService = async ({ nombre, email, password }) => {
     try {
-        console.log(`SERVICE - createEmpleadoService - Datos recibidos: ${JSON.stringify({ nombre, email, password })}`);
-
-        const usuarioExistente = await userRepository.findUserByEmail(email); 
+        const usuarioExistente = await userRepository.findUserByEmail(email);
         if (usuarioExistente) {
             const error = new Error('El email ya está registrado');
-            error.status = 409; 
+            error.status = 409;
             throw error;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10); 
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        const empleadoData = { 
-            nombre, 
-            email, 
-            password: hashedPassword, 
-            rol: 'empleado' 
-        }; 
+        const empleadoData = {
+            nombre,
+            email,
+            password: hashedPassword,
+            rol: 'empleado'
+        };
 
-        const nuevoEmpleado = await adminUsuarioRepository.createEmpleado(empleadoData); 
-        
-        console.log("SERVICE - createEmployeeService: Empleado creado exitosamente.");
-        return nuevoEmpleado; // 
+        const nuevoEmpleado = await adminUsuarioRepository.createEmpleado(empleadoData);
+        return nuevoEmpleado;
     } catch (error) {
-        console.error("Error en createEmpleadoService:", error); 
-        throw error; 
+        console.error("Error en createEmpleadoService:", error.message);
+        throw error;
     }
 };
 
 exports.getAllUsuariosService = async () => {
     try {
-        const usuarios = await adminUsuarioRepository.getAllUsuariosRepository(); 
-        console.log("SERVICE - getAllUsuariosService: Usuarios obtenidos del repositorio.");
-        return usuarios; 
+        return await adminUsuarioRepository.getAllUsuariosRepository();
     } catch (error) {
-        console.error("Error en getAllUsuariosService:", error);
+        console.error("Error en getAllUsuariosService:", error.message);
         throw new Error("Error en la capa de servicio al obtener usuarios: " + error.message);
     }
 };
 
 exports.updateUsuarioService = async (id, updateData) => {
-    try {
-        console.log(`SERVICE updateUsuarioService - ID: ${id}, Datos: ${JSON.stringify(updateData)}`);
-        return await adminUsuarioRepository.updateUsuario(id, updateData);
-    } catch (error) {
-        console.log("Error en updateUsuario:" + error);
-        throw error("Error en el service" + error)
-    }
+    // Whitelist de campos permitidos: evita mass-assignment (ej. cambiar password o _id por el body).
+    const permitido = {};
+    ['nombre', 'email', 'rol', 'activo'].forEach((campo) => {
+        if (updateData[campo] !== undefined) {
+            permitido[campo] = updateData[campo];
+        }
+    });
+    return await adminUsuarioRepository.updateUsuario(id, permitido);
 };
-
-

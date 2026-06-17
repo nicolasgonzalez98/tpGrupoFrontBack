@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { createUser, findUserByEmail } = require('../repository/userRepository');
 
-const SECRET_KEY = "TpCervezas"
+const SECRET_KEY = process.env.JWT_SECRET || "TpCervezas";
 
 const register = async ({ nombre, email, password, rol }) => {
     let newUser

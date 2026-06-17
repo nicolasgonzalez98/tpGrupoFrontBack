@@ -2,15 +2,17 @@ const pedidoService = require('../services/pedidoService');
 
 const createPedido = async (req, res) => {
   try {
-    const { usuario_id, cervezas } = req.body;
+    const { cervezas } = req.body;
+    // El usuario se deriva del token (no se confía en el body) → evita crear pedidos a nombre de otro.
+    const usuario_id = req.user._id;
 
-    if (!usuario_id || !Array.isArray(cervezas) || cervezas.length === 0) {
+    if (!Array.isArray(cervezas) || cervezas.length === 0) {
       return res.status(400).json({ error: 'Faltan datos requeridos' });
     }
 
     for (const item of cervezas) {
-      if (!item.cerveza || !item.cantidad) {
-        return res.status(400).json({ error: 'Cada cerveza debe tener id y cantidad' });
+      if (!item.cerveza || typeof item.cantidad !== 'number' || !Number.isInteger(item.cantidad) || item.cantidad <= 0) {
+        return res.status(400).json({ error: 'Cada cerveza debe tener id y una cantidad entera mayor a 0' });
       }
     }
 
