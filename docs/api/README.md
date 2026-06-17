@@ -4,8 +4,8 @@ Referencia completa de la API REST del backend (`backEnd/`). **Todos los contrat
 
 - **Base URL (dev):** `http://localhost:3000`
 - **Formato:** JSON (request y response). El backend registra `express.json()` globalmente ([index.js:15](../../backEnd/index.js#L15)).
-- **CORS:** abierto a todos los orígenes (`app.use(cors())`, [index.js:14](../../backEnd/index.js#L14)).
-- **Autenticación:** el login emite un JWT, pero **ningún endpoint verifica el token** hoy. No hay header `Authorization` requerido por el backend. Ver [seguridad](../security/README.md).
+- **CORS:** restringido a orígenes `localhost` (`app.use(cors({ origin: [/^http:\/\/localhost:\d+$/] }))`, [index.js:15](../../backEnd/index.js#L15)). Antes estaba abierto a todos los orígenes.
+- **Autenticación:** el login emite un JWT (`{ _id, rol }`, `expiresIn: '1h'`) y el backend **lo exige en TODAS las rutas** mediante el header `Authorization: Bearer <token>`, **salvo** `POST /api/auth/register` y `POST /api/auth/login`. La verificación la hacen los middlewares `verifyToken` + `requireRole` ([middlewares/auth.js](../../backEnd/middlewares/auth.js)): `verifyToken` valida el token y deja `{ _id, rol }` en `req.user`; `requireRole(...)` restringe por rol. El secret se lee de `process.env.JWT_SECRET` con fallback `"TpCervezas"`. Ver [seguridad](../security/README.md).
 
 ---
 
@@ -15,13 +15,13 @@ El montaje de routers se hace en [index.js:19-27](../../backEnd/index.js#L19-L27
 
 | Prefijo | Router | Archivo | Acceso real backend |
 |---|---|---|---|
-| `/api/auth` | auth | [authRoutes.js](../../backEnd/routes/authRoutes.js) | público |
-| `/api/usuarios` | adminUsuario | [adminUsuarioRoutes.js](../../backEnd/routes/adminUsuarioRoutes.js) | público (sin validación) |
-| `/stock` | stock | [stockRoutes.js](../../backEnd/routes/stockRoutes.js) | público (sin validación) |
-| `/pedido` | pedido | [pedidoRoutes.js](../../backEnd/routes/pedidoRoutes.js) | público (sin validación) |
-| `/` | cerveza | [cervezaRoutes.js](../../backEnd/routes/cervezaRoutes.js) | público |
+| `/api/auth` | auth | [authRoutes.js](../../backEnd/routes/authRoutes.js) | público (`register` y `login`, sin token) |
+| `/api/usuarios` | adminUsuario | [adminUsuarioRoutes.js](../../backEnd/routes/adminUsuarioRoutes.js) | `verifyToken` + `requireRole('admin')` (router-level) |
+| `/stock` | stock | [stockRoutes.js](../../backEnd/routes/stockRoutes.js) | `verifyToken` + `requireRole('admin','empleado')` (router-level) |
+| `/pedido` | pedido | [pedidoRoutes.js](../../backEnd/routes/pedidoRoutes.js) | `verifyToken` (router-level) + `requireRole` por endpoint |
+| `/` | cerveza | [cervezaRoutes.js](../../backEnd/routes/cervezaRoutes.js) | `verifyToken` (cualquier rol autenticado) |
 
-> El rol "esperado" de cada endpoint se enumera por intención de diseño (lo aplican los guards del frontend). El backend **no** lo valida. Ver [BUSINESS_RULES §3](../business/BUSINESS_RULES.md#3-roles-y-permisos).
+> El backend **sí valida** autenticación y rol vía `verifyToken` + `requireRole` ([middlewares/auth.js](../../backEnd/middlewares/auth.js)). El rol indicado por endpoint es el que efectivamente exige el backend (además de aplicarse en los guards del frontend). Ver [BUSINESS_RULES §3](../business/BUSINESS_RULES.md#3-roles-y-permisos).
 
 ```mermaid
 graph LR
@@ -50,6 +50,16 @@ No hay middleware central de errores; cada controller arma su propio `catch`. Lo
 | `adminUsuarioController` | `{ "code": 500, "message": "..." }` o `{ "message": "..." }` |
 | `cervezaController` / `stockController` | `{ "error": "..." }` |
 | `pedidoController` | `{ "error": "..." }` |
+
+### Errores transversales de autenticación/autorización
+
+Estos códigos los emiten los middlewares ([middlewares/auth.js](../../backEnd/middlewares/auth.js)) **antes** de llegar al controller, en cualquier endpoint protegido (todos salvo `POST /api/auth/register` y `POST /api/auth/login`):
+
+| Código | Cuándo | Body |
+|---|---|---|
+| `401` | header `Authorization` ausente o sin prefijo `Bearer ` | `{ "message": "Token no provisto" }` |
+| `401` | token inválido o expirado | `{ "message": "Token inválido o expirado" }` |
+| `403` | token válido pero el rol no tiene permiso (`requireRole`) | `{ "message": "No tenés permisos para realizar esta acción" }` |
 
 ---
 
@@ -98,7 +108,7 @@ Registra un usuario. Por defecto crea rol `cliente`; si el body trae `rol: "empl
 
 ### 3.2 `POST /api/auth/login`
 
-Valida credenciales y emite un JWT (`{ _id, rol }`, `expiresIn: '1h'`, secret hardcodeado `"TpCervezas"`).
+Valida credenciales y emite un JWT (`{ _id, rol }`, `expiresIn: '1h'`, firmado con `process.env.JWT_SECRET`).
 
 **Origen:** [authController.login](../../backEnd/controllers/authController.js#L12) → [authService.login](../../backEnd/services/authService.js#L30)
 
@@ -118,9 +128,11 @@ Valida credenciales y emite un JWT (`{ _id, rol }`, `expiresIn: '1h'`, secret ha
 | Código | Cuándo | Body |
 |---|---|---|
 | `200` | login OK | `{ "message": "Login exitoso", "token": "<jwt>", "user": { "_id", "email", "nombre", "rol", "activo" } }` |
-| `500` | **cualquier error** (usuario inexistente, inactivo o password incorrecta) | `{ "message": "<mensaje>" }` |
+| `404` | usuario inexistente o inactivo | `{ "message": "Usuario no encontrado" }` / `{ "message": "El usuario no esta activo." }` |
+| `401` | password incorrecta | `{ "message": "Contraseña incorrecta" }` |
+| `500` | error inesperado | `{ "message": "<mensaje>" }` |
 
-> ⚠️ **Inconsistencia código vs. intención.** El `authService.login` lanza errores con `error.status = 404` (usuario no encontrado / inactivo) y `error.status = 401` (password incorrecta), pero el controller hace `res.status(500)` fijo en el `catch` ([authController.js:16-18](../../backEnd/controllers/authController.js#L16-L18)) — **ignora `error.status`**. Por lo tanto, en la práctica **todos los fallos de login devuelven `500`**, no `404`/`401`. El mensaje sí distingue el caso (`"Usuario no encontrado"`, `"El usuario no esta activo."`, `"Contraseña incorrecta"`). _Corrección sugerida: usar `res.status(error.status || 500)` como ya hace `register`._
+> ✅ **Corregido.** El controller ahora propaga el status del error con `res.status(error.status || 500)` ([authController.js:17](../../backEnd/controllers/authController.js#L17)), igual que `register`. El `authService.login` lanza errores con `error.status = 404` (usuario no encontrado / inactivo) y `error.status = 401` (password incorrecta), y esos códigos llegan tal cual al cliente. Solo se devuelve `500` ante un error inesperado (sin `status`). _Antes el controller hacía `res.status(500)` fijo, por lo que todos los fallos de login se reportaban como `500`; eso ya no ocurre._
 
 ```json
 // 200
@@ -142,10 +154,10 @@ sequenceDiagram
     SVC->>DB: findOne({ email })
     alt usuario no existe o inactivo
         SVC-->>API: throw (status 404)
-        API-->>FE: 500 { message }
+        API-->>FE: 404 { message }
     else password incorrecta
         SVC-->>API: throw (status 401)
-        API-->>FE: 500 { message }
+        API-->>FE: 401 { message }
     else OK
         SVC->>SVC: jwt.sign({_id, rol})
         SVC-->>API: { token, user }
@@ -157,7 +169,7 @@ sequenceDiagram
 
 ## 4. Usuarios (admin) — `/api/usuarios`
 
-Rol esperado: **admin**. (No validado por el backend.)
+Rol requerido: **admin**. El router aplica `verifyToken` + `requireRole('admin')` a todas sus rutas (GET, POST, PATCH). Sin token → `401`; rol distinto de `admin` → `403`.
 
 ### 4.1 `GET /api/usuarios`
 
@@ -214,9 +226,9 @@ Actualiza un usuario. Pensado para activar/desactivar (`activo`) o cambiar `rol`
 
 ---
 
-## 5. Cervezas (catálogo público) — `/`
+## 5. Cervezas (catálogo) — `/`
 
-Montado en la raíz. Sólo lectura. Lo consume el cliente para ver el catálogo.
+Montado en la raíz. Sólo lectura. Lo consume el cliente para ver el catálogo. **Requiere token** (`verifyToken`): cualquier rol autenticado puede leer, pero sin `Authorization: Bearer <token>` válido devuelve `401`.
 
 ### 5.1 `GET /`
 
@@ -245,7 +257,7 @@ Obtiene una cerveza por ID. **Atención:** al estar montado en `/`, esta ruta ca
 
 ## 6. Stock de cervezas — `/stock`
 
-Rol esperado: **admin / empleado**. CRUD completo de cervezas.
+Rol requerido: **admin / empleado**. El router aplica `verifyToken` + `requireRole('admin','empleado')` a todas sus rutas (POST, GET, GET/:id, DELETE, PATCH). Sin token → `401`; otro rol → `403`. CRUD completo de cervezas.
 
 ### 6.1 `POST /stock`
 
@@ -321,7 +333,7 @@ Actualiza sólo los campos presentes en el body. El repositorio rechaza stock ne
 
 ## 7. Pedidos — `/pedido`
 
-Rol esperado: **cliente** (crear / ver propios), **admin/empleado** (listar todos / aprobar / rechazar / eliminar).
+Todas las rutas requieren token (`verifyToken` a nivel de router). Rol requerido por endpoint (`requireRole`): `POST /pedido` → **cliente**; `GET /pedido`, `PATCH /pedido/:id`, `DELETE /pedido/:id` → **admin/empleado**; `GET /pedido/:id` y `GET /pedido/usuario/:usuarioId` → **cualquier rol autenticado** (solo `verifyToken`). Sin token → `401`; rol sin permiso → `403`.
 
 ### 7.1 `POST /pedido`
 
@@ -333,14 +345,13 @@ Crea un pedido en estado `pendiente` y **descuenta stock** de cada cerveza. Lóg
 
 | Campo | Tipo | Requerido | Notas |
 |---|---|---|---|
-| `usuario_id` | ObjectId (string) | sí | tomado del body, **no del token** |
+| `usuario_id` | — | — | **NO se envía en el body**; se deriva del token (`req.user._id`) en el controller ([pedidoController.js:7](../../backEnd/controllers/pedidoController.js#L7)) |
 | `cervezas` | array | sí | no vacío |
 | `cervezas[].cerveza` | ObjectId (string) | sí | debe existir |
-| `cervezas[].cantidad` | number | sí | no se valida `> 0` ni entero |
+| `cervezas[].cantidad` | number | sí | debe ser **entero** y **> 0** (si no, `400`) |
 
 ```json
 {
-  "usuario_id": "665aaa...",
   "cervezas": [
     { "cerveza": "665bbb...", "cantidad": 3 },
     { "cerveza": "665ccc...", "cantidad": 1 }
@@ -353,10 +364,12 @@ Crea un pedido en estado `pendiente` y **descuenta stock** de cada cerveza. Lóg
 | Código | Cuándo | Body |
 |---|---|---|
 | `201` | creado | documento `Pedido` (estado `pendiente`) |
-| `400` | falta `usuario_id`/`cervezas` o array vacío | `{ "error": "Faltan datos requeridos" }` |
-| `400` | ítem sin `cerveza` o `cantidad` | `{ "error": "Cada cerveza debe tener id y cantidad" }` |
+| `400` | `cervezas` ausente, no-array o array vacío | `{ "error": "Faltan datos requeridos" }` |
+| `400` | ítem sin `cerveza`, o `cantidad` no entera / `<= 0` | `{ "error": "Cada cerveza debe tener id y una cantidad entera mayor a 0" }` |
 | `400` | cerveza inexistente | `{ "error": "Cerveza con ID <id> no encontrada" }` |
 | `400` | stock insuficiente | `{ "error": "Stock insuficiente para <nombre>" }` |
+
+> El `usuario_id` del pedido se toma de `req.user._id` (del token), no del body — evita crear pedidos a nombre de otro usuario.
 
 ```mermaid
 sequenceDiagram
@@ -365,7 +378,8 @@ sequenceDiagram
     participant SVC as pedidoService
     participant CR as cervezaRepository
     participant PR as pedidoRepository
-    FE->>API: { usuario_id, cervezas[] }
+    FE->>API: Bearer token + { cervezas[] }
+    API->>API: usuario_id = req.user._id (del token)
     API->>SVC: createPedido(data)
     loop cada item
         SVC->>CR: getCervezaById(item.cerveza)
@@ -447,15 +461,15 @@ Aprobar / rechazar (o cambiar `aprobado_por`). Sólo se aplican los campos `apro
 
 ## 8. Tabla resumen de endpoints
 
-| Método | Ruta | Acción | Rol esperado | Éxito |
+| Método | Ruta | Acción | Rol requerido (backend) | Éxito |
 |---|---|---|---|---|
-| POST | `/api/auth/register` | Registrar usuario/cliente | público | 201 |
-| POST | `/api/auth/login` | Login + JWT | público | 200 |
+| POST | `/api/auth/register` | Registrar usuario/cliente | público (sin token) | 201 |
+| POST | `/api/auth/login` | Login + JWT | público (sin token) | 200 |
 | GET | `/api/usuarios` | Listar usuarios | admin | 200 |
 | POST | `/api/usuarios` | Crear empleado | admin | 200 |
 | PATCH | `/api/usuarios/:id` | Activar/desactivar / cambiar rol | admin | 200 |
-| GET | `/` | Listar cervezas (catálogo) | público | 200 |
-| GET | `/:id` | Cerveza por ID | público | 200 |
+| GET | `/` | Listar cervezas (catálogo) | cualquier rol autenticado | 200 |
+| GET | `/:id` | Cerveza por ID | cualquier rol autenticado | 200 |
 | POST | `/stock` | Crear cerveza | admin/empleado | 201 |
 | GET | `/stock` | Listar cervezas | admin/empleado | 200 |
 | GET | `/stock/:id` | Cerveza por ID | admin/empleado | 200 |
@@ -463,10 +477,12 @@ Aprobar / rechazar (o cambiar `aprobado_por`). Sólo se aplican los campos `apro
 | PATCH | `/stock/:id` | Modificar cerveza | admin/empleado | 200 |
 | POST | `/pedido` | Crear pedido (descuenta stock) | cliente | 201 |
 | GET | `/pedido` | Listar todos los pedidos | admin/empleado | 200 |
-| GET | `/pedido/:id` | Pedido por ID | admin/empleado/cliente | 200 |
-| GET | `/pedido/usuario/:usuarioId` | Pedidos de un usuario | cliente | 200 |
+| GET | `/pedido/:id` | Pedido por ID | cualquier rol autenticado | 200 |
+| GET | `/pedido/usuario/:usuarioId` | Pedidos de un usuario | cualquier rol autenticado | 200 |
 | DELETE | `/pedido/:id` | Eliminar pedido | admin/empleado | 200 |
 | PATCH | `/pedido/:id` | Aprobar/rechazar pedido | admin/empleado | 200 |
+
+> Todos los endpoints salvo `POST /api/auth/register` y `POST /api/auth/login` requieren `Authorization: Bearer <token>`. Token ausente/inválido → `401`; rol sin permiso → `403`.
 
 ---
 
@@ -481,8 +497,8 @@ Mapa servicio Angular → endpoint:
 | [CervezaService](../../frontEnd/src/services/cerveza.service.ts) | HttpClient | `GET /`, `GET /:id`, `POST /stock`, `PATCH /stock/:id`, `DELETE /stock/:id` |
 | [PedidosService](../../frontEnd/src/services/pedidos.service.ts) | HttpClient | `GET /pedido`, `GET /pedido/:id`, `GET /pedido/usuario/:id`, `POST /pedido`, `PATCH /pedido/:id`, `DELETE /pedido/:id` |
 
-> El frontend guarda el JWT en `localStorage` pero **no lo envía** en `Authorization` en ninguna request. Ver [seguridad](../security/README.md).
+> El frontend **React** (`frontReact/`) **sí envía** el JWT: un interceptor de Axios adjunta `Authorization: Bearer <token>` a toda request y, ante un `401`, limpia la sesión y redirige al login ([frontReact/src/services/http.ts](../../frontReact/src/services/http.ts)). El frontend **Angular** viejo (`frontEnd/`) **no** envía el token, por lo que quedó roto a propósito contra el backend actual. Ver [seguridad](../security/README.md).
 
 ---
 
-_Documentación derivada del código. Última verificación de contratos contra `backEnd/` el 2026-06-16._
+_Documentación derivada del código. Última verificación de contratos contra `backEnd/` el 2026-06-17._

@@ -1,6 +1,8 @@
 # tpGrupoFrontBack — Sistema de Gestión de Cervezas y Pedidos
 
-Trabajo práctico que implementa un sistema de gestión de stock de cervezas y pedidos con tres roles diferenciados (cliente, empleado, admin). Compuesto por un backend REST en Node.js/Express y un frontend en Angular 19.
+> **Última actualización / verificación:** 2026-06-17 (commit `5f8172e`)
+
+Trabajo práctico que implementa un sistema de gestión de stock de cervezas y pedidos con tres roles diferenciados (cliente, empleado, admin). Compuesto por un backend REST en Node.js/Express y un frontend. El frontend Angular 19 original (`frontEnd/`) está siendo migrado a React (`frontReact/`); el cliente React es el que se mantiene actualizado y el que integra correctamente con la nueva autenticación del backend.
 
 > Documentación complementaria:
 > - [Arquitectura](architecture/ARCHITECTURE.md)
@@ -19,17 +21,24 @@ Trabajo práctico que implementa un sistema de gestión de stock de cervezas y p
 - **ORM/ODM:** Mongoose 8
 - **Base de datos:** MongoDB Atlas (cluster cloud)
 - **Autenticación:** JSON Web Tokens (jsonwebtoken 9) + bcrypt 6
+- **Autorización:** middleware propio `verifyToken` + `requireRole` ([backEnd/middlewares/auth.js](../backEnd/middlewares/auth.js)) — verifica el JWT y el rol en **el backend** para todas las rutas salvo `/api/auth/register` y `/api/auth/login`
 - **Configuración:** dotenv 16
-- **CORS:** cors 2.8
+- **CORS:** cors 2.8 (restringido a orígenes `localhost`)
 - **Dev:** nodemon 3
 
-### Frontend
+### Frontend (React — actual)
+- **Framework:** React (`frontReact/`)
+- **HTTP:** Axios con interceptor global ([frontReact/src/services/http.ts](../frontReact/src/services/http.ts)) que adjunta `Authorization: Bearer <token>` y cierra sesión ante un 401
+- **Config:** constante `API_URL` centralizada
+
+### Frontend (Angular 19 — legado, en reemplazo)
 - **Framework:** Angular 19 (standalone components)
 - **UI:** PrimeNG 19 + tema Aura + PrimeIcons
 - **Estilos:** TailwindCSS 4
 - **HTTP:** `@angular/common/http` (HttpClient) + Axios 1.9 (en AuthService)
 - **Reactividad:** RxJS 7.8 + Zone.js
 - **Tooling:** Angular CLI 19 + TypeScript 5.7
+- **Nota:** quedó intencionalmente roto contra el backend nuevo (no envía el token en `Authorization`); se reemplaza por la versión React.
 
 ### Testing
 - Backend: **no hay tests automatizados** (solo archivos `.http` para REST Client).
@@ -50,7 +59,7 @@ tpGrupoFrontBack/
 │   ├── database/            Conexión + URI
 │   ├── test/                Requests HTTP manuales
 │   └── index.js             Entry point
-├── frontEnd/                SPA Angular 19
+├── frontEnd/                SPA Angular 19 (legado, en reemplazo)
 │   └── src/
 │       ├── app/
 │       │   ├── components/  Vistas (login, register, stock, pedidos, admin…)
@@ -59,6 +68,9 @@ tpGrupoFrontBack/
 │       │   ├── layout/      Layout principal + navbar
 │       │   └── app.routes.ts
 │       └── services/        AuthService, UsuarioService, CervezaService, PedidosService
+├── frontReact/              SPA React (frontend actual)
+│   └── src/
+│       └── services/        Cliente Axios con interceptor de auth (http.ts)
 ├── docs/                    Documentación (este directorio)
 │   ├── architecture/
 │   ├── business/
@@ -77,9 +89,11 @@ tpGrupoFrontBack/
 PORT=3000
 DB_USER=<usuario_mongo_atlas>
 DB_PASSWORD=<password_mongo_atlas>
+JWT_SECRET=<secreto_para_firmar_jwt>
 ```
 
-> El cluster está hardcodeado en [backEnd/database/config.js](../backEnd/database/config.js) (`cluster0.zbfn2s4.mongodb.net`). Para usar otra instancia hay que editar el archivo.
+> El secreto del JWT se lee de `process.env.JWT_SECRET` (con fallback `'TpCervezas'` si no está definido). En producción definí siempre `JWT_SECRET`.
+> El cluster (host) sigue hardcodeado en [backEnd/database/config.js](../backEnd/database/config.js) (`cluster0.zbfn2s4.mongodb.net`). Para usar otra instancia hay que editar el archivo.
 
 ### 2. Instalación
 
@@ -97,8 +111,8 @@ npm install
 npm start            # ng serve en http://localhost:4200
 ```
 
-Backend escucha en `http://localhost:3000` (o el `PORT` del `.env`).
-Frontend asume el backend en `http://localhost:3000` (URL hardcodeada en los servicios).
+Backend escucha en `http://localhost:3000` (o el `PORT` del `.env`; default `3000`).
+El frontend React centraliza la base del backend en una constante `API_URL`. El frontend Angular legado todavía tiene la URL `http://localhost:3000` hardcodeada en los servicios.
 
 ---
 
@@ -107,61 +121,75 @@ Frontend asume el backend en `http://localhost:3000` (URL hardcodeada en los ser
 | Aspecto | Estado |
 |---|---|
 | Arquitectura backend | 4 capas (route → controller → service → repository) bien separadas |
-| Arquitectura frontend | Standalone components + servicios inyectables + guards por rol |
-| Persistencia | MongoDB Atlas vía Mongoose, sin transacciones |
-| Autenticación | JWT firmado, password con bcrypt (10 rounds) |
-| Autorización | **Solo en el frontend** (guards). El backend **no valida JWT ni roles** |
-| Validación de entrada | Mínima, dispersa entre controllers |
-| Manejo de errores | Catch local en cada controller, sin middleware central |
-| Logging | `console.log/error` (incluye datos sensibles en algunos lugares) |
+| Arquitectura frontend | React (`frontReact/`) con cliente Axios + interceptor de auth; Angular legado con standalone components + guards por rol |
+| Persistencia | MongoDB Atlas vía Mongoose. Sin transacciones multi-documento, pero el descuento de stock es atómico por ítem con rollback |
+| Autenticación | JWT firmado (secret en `JWT_SECRET`), password con bcrypt (10 rounds) |
+| Autorización | **Verificada en el backend** vía `verifyToken` + `requireRole` en todas las rutas salvo `/api/auth/*`. El frontend además tiene guards por rol |
+| Validación de entrada | Validación de tipos en controllers (incluye `cantidad` entera > 0, tipos de stock con `!== undefined`) + whitelist de campos en update de usuario. Sin schema validator (Joi/Zod) |
+| Manejo de errores | Catch local en cada controller; el login/register mapean `error.status` (401/404/409). Sin middleware central |
+| Logging | `console.log/error` (ya no se loguean passwords ni datos sensibles de usuarios) |
 | Tests | No hay |
 | CI/CD | No hay |
 | Documentación | Sólo este conjunto de docs |
 
-El stack es coherente y la separación en capas del backend es limpia. La debilidad principal está en la **seguridad del backend** (el JWT no se verifica en ninguna ruta) y en la **ausencia de tests**.
+El stack es coherente y la separación en capas del backend es limpia. Tras el commit `5f8172e`, la autorización se verifica en el backend (JWT + roles) y se cerraron los principales bugs de seguridad. Las debilidades restantes son sobre todo la **ausencia de tests/CI** y endurecimientos pendientes (rate-limiting, helmet, bcrypt rounds, secrets/host del cluster).
 
 ---
 
 ## Deuda técnica
 
-### Bloqueantes / críticos
+### Corregido (commit `5f8172e`)
 
-1. **JWT secret hardcodeado** en [authService.js:5](../backEnd/services/authService.js#L5) (`SECRET_KEY = "TpCervezas"`). Debe ir a `process.env.JWT_SECRET`.
-2. **Ninguna ruta del backend verifica el JWT.** Todos los endpoints de `/stock`, `/pedido`, `/api/usuarios` están abiertos. Falta un middleware `verifyToken` y otro `requireRole`.
-3. **El frontend depende exclusivamente de guards** para autorizar. Cualquier cliente HTTP (Postman, curl) puede saltarse esa capa.
-4. **Bug en `adminUsuarioService.updateUsuarioService`** ([línea 52](../backEnd/services/adminUsuarioService.js#L52)): `throw error("Error en el service" + error)` invoca `error` como función — `error` es la variable del catch, no es invocable; lanzará `TypeError`.
-5. **`PORT` sin valor por defecto** ([index.js:5](../backEnd/index.js#L5)) — si falta el `.env`, `app.listen(undefined)` arranca en puerto aleatorio.
-6. **Race condition en creación de pedido**: stock se descuenta y luego se crea el pedido sin transacción ([pedidoService.js:5-19](../backEnd/services/pedidoService.js#L5-L19)). Dos pedidos concurrentes pueden sobrevender stock.
-7. **Stock no se restituye al rechazar/borrar pedido** — pedido descontó stock al crearse, queda perdido si se rechaza.
-8. **Inconsistencia en `ref` del schema**: `Pedido.cervezas[].cerveza` referencia `'cervezas'` (minúscula) pero el modelo registrado es `'Cerveza'` ([Pedido.js:11](../backEnd/models/Pedido.js#L11)). Eso rompe `populate()`.
+1. ✅ **(Corregido — commit 5f8172e)** **JWT secret ya no hardcodeado suelto.** Tanto [authService.js:5](../backEnd/services/authService.js#L5) como el middleware leen el secret de `process.env.JWT_SECRET` (con fallback `'TpCervezas'`). _Pendiente menor: el fallback sigue existiendo._
+2. ✅ **(Corregido — commit 5f8172e)** **El backend ahora verifica el JWT en todas las rutas** salvo `/api/auth/register` y `/api/auth/login`. Se agregó [backEnd/middlewares/auth.js](../backEnd/middlewares/auth.js) con `verifyToken` + `requireRole`, aplicados por router: `/api/usuarios` → admin; `/stock/*` → admin|empleado; `POST /pedido` → cliente; `GET /pedido`, `PATCH /pedido/:id`, `DELETE /pedido/:id` → admin|empleado; `GET /pedido/:id` y `GET /pedido/usuario/:id` → cualquier rol autenticado; catálogo de cervezas (`GET /`, `GET /:id`) → cualquier rol autenticado.
+3. ✅ **(Corregido — commit 5f8172e)** **La autorización ya no depende solo de guards del frontend.** Un cliente HTTP (Postman, curl) sin token válido recibe 401/403 del backend. El frontend React envía el token vía interceptor de Axios ([frontReact/src/services/http.ts](../frontReact/src/services/http.ts)).
+4. ✅ **(Corregido — commit 5f8172e)** **`adminUsuarioService.updateUsuarioService`**: se eliminó el `throw error(...)` que lanzaba `TypeError`. Además se agregó una whitelist de campos (`nombre`, `email`, `rol`, `activo`) que evita mass-assignment ([adminUsuarioService.js:40-49](../backEnd/services/adminUsuarioService.js#L40-L49)).
+5. ✅ **(Corregido — commit 5f8172e)** **`PORT` con default `3000`** ([index.js:5](../backEnd/index.js#L5)): `const port = process.env.PORT || 3000`.
+6. ✅ **(Corregido — commit 5f8172e)** **Race condition en creación de pedido mitigada**: el stock se descuenta de forma atómica y condicional por ítem (`findOneAndUpdate` con `stock_actual $gte`), con rollback de los descuentos previos si alguno falla ([pedidoService.js:15-39](../backEnd/services/pedidoService.js#L15-L39)). Evita la sobreventa por concurrencia. _Nota: no es una transacción multi-documento real (ver pendientes)._
+7. ✅ **(Corregido — commit 5f8172e)** **Se restituye el stock al rechazar o eliminar un pedido** que tenía stock reservado ([pedidoService.js:53-93](../backEnd/services/pedidoService.js#L53-L93)).
+8. ✅ **(Corregido — commit 5f8172e)** **`ref` del schema corregido**: `Pedido.cervezas[].cerveza` ahora referencia `'Cerveza'` ([Pedido.js:11](../backEnd/models/Pedido.js#L11)). El `populate()` ya funcionaría (aunque todavía no se invoca; ver pendientes).
+9. ✅ **(Corregido — commit 5f8172e)** **CORS restringido** a orígenes `localhost` vía regex (`/^http:\/\/localhost:\d+$/`) en [index.js:15](../backEnd/index.js#L15). Ya no está abierto a todos.
+10. ✅ **(Corregido — commit 5f8172e)** **`createPedido` toma `usuario_id` del token** (`req.user._id`), no del body, y valida que `cantidad` sea entero `> 0` ([pedidoController.js:7-17](../backEnd/controllers/pedidoController.js#L7-L17)).
+11. ✅ **(Corregido — commit 5f8172e)** **Bug de falsy en validaciones de stock corregido**: `stockController.createCerveza` usa `if (stock_actual !== undefined && typeof stock_actual !== "number")` ([stockController.js:13-21](../backEnd/controllers/stockController.js#L13-L21)). `stock_actual = 0` y `activo = false` ahora se validan bien.
+12. ✅ **(Corregido — commit 5f8172e)** **`updateUsuario` ya no acepta cualquier campo del body**: el service filtra contra la whitelist `nombre/email/rol/activo` (ver punto 4), y además el endpoint quedó protegido con `requireRole('admin')`.
+13. ✅ **(Corregido — commit 5f8172e)** **No se exponen datos sensibles en logs**: se quitaron los logs que filtraban password/datos de usuarios.
+14. ✅ **(Corregido — commit 5f8172e)** **`getAllUsuarios` excluye el hash de password** (`.select('-password')` en [adminUsuarioRepository.js:17](../backEnd/repository/adminUsuarioRepository.js#L17)).
+15. ✅ **(Corregido — commit 5f8172e)** **`login` mapea el status correcto**: usa `res.status(error.status || 500)` → devuelve 401/404 según corresponda ([authController.js:17](../backEnd/controllers/authController.js#L17)). Antes siempre devolvía 500.
+16. ✅ **(Corregido — commit 5f8172e)** **NoSQL injection en login mitigada**: `findUserByEmail` coerciona `email` a string ([userRepository.js:10](../backEnd/repository/userRepository.js#L10)).
+17. ✅ **(Corregido — commit 5f8172e)** **El frontend React ahora envía el token al backend** (`Authorization: Bearer <token>` vía interceptor de Axios) y cierra sesión ante un 401. _El frontend Angular legado quedó intencionalmente roto contra el backend nuevo._
+
+### Pendientes / críticos
+
+1. **JWT en `localStorage`** en el frontend — expuesto a XSS. Mejor `httpOnly cookie`.
+2. **Sin rate limiting** en `/api/auth/login` → expuesto a fuerza bruta (falta `express-rate-limit`).
+3. **Sin `helmet`/headers de seguridad.**
+4. **Fallback del `JWT_SECRET`** (`'TpCervezas'`) sigue presente: si no se define `JWT_SECRET`, se firma con un secret conocido.
 
 ### Mayores
 
-9. **CORS totalmente abierto** (`app.use(cors())`) — debería restringirse a `origin: http://localhost:4200` (o el dominio prod).
-10. **Sin validación de password** (longitud mínima, complejidad) ni de email más allá del HTML5 del frontend.
-11. **Validaciones del backend con bug de falsy**: `if (stock_actual && typeof stock_actual !== "number")` ([stockController.js:13-16](../backEnd/controllers/stockController.js#L13-L16)) — `stock_actual === 0` se considera ausente, no se valida.
-12. **`updateUsuario` acepta cualquier campo del body** ([adminUsuarioRepository.js:41](../backEnd/repository/adminUsuarioRepository.js#L41)) → permite que un cliente cambie su propio rol a admin si llama el endpoint (que no está protegido).
-13. **Sin paginación** en listados (`/stock`, `/pedido`, `/api/usuarios`). Va a escalar mal.
-14. **Sin populate**: `getAllPedidos` devuelve sólo IDs de cerveza y usuario; el frontend tendría que resolver nombres uno a uno.
-15. **Logs de datos sensibles**: `createEmpleadoService` loguea la password en plano antes del hash ([adminUsuarioService.js:7](../backEnd/services/adminUsuarioService.js#L7)).
-16. **JWT en `localStorage`** en el frontend — expuesto a XSS. Mejor `httpOnly cookie`.
-17. **Token nunca se envía al backend**: el frontend guarda el JWT pero **no lo manda en `Authorization`**. Cuando se agregue el middleware de auth se va a romper todo.
-18. **Sin rate limiting** en `/api/auth/login` → expuesto a fuerza bruta.
+5. **Sin validación de password** (longitud mínima, complejidad) ni de email más allá del HTML5 del frontend.
+6. **Sin paginación** en listados (`/stock`, `/pedido`, `/api/usuarios`). Va a escalar mal.
+7. **`populate` no se invoca**: el `ref` ya está corregido (`'Cerveza'`), pero `getAllPedidos`/`getPedidoById` siguen devolviendo sólo IDs; el frontend tendría que resolver nombres uno a uno.
+8. **bcrypt sigue con 10 rounds** — debería subirse a ≥ 12 (o usar `argon2`).
+9. **Sin transacción multi-documento real**: el descuento atómico por ítem + rollback mitiga la race, pero no es una transacción Mongo.
+10. **El login revela existencia de usuarios** (enumeración): devuelve mensajes/status distintos para "usuario no encontrado" vs "contraseña incorrecta".
+11. **La URI/host del cluster de Mongo sigue hardcodeada** en [config.js:6](../backEnd/database/config.js#L6) (`cluster0.zbfn2s4.mongodb.net`).
+12. **Las cervezas con `activo: false` siguen sin filtrarse** del catálogo.
 
 ### Menores / housekeeping
 
-19. **URLs hardcodeadas en el frontend** (`http://localhost:3000` en 4 servicios). Falta un `environment.ts`.
-20. **Mezcla de Axios + HttpClient** en el frontend (Axios solo en `AuthService`). Unificar.
-21. **Naming inconsistente**: `UsuarioService.ts` vs `cerveza.service.ts` vs `pedidos.service.ts`.
-22. **Routing inconsistente**: `/api/auth/`, `/api/usuarios/` con prefijo, pero `/stock`, `/pedido`, `/` sin él.
-23. **Lógica de validación en controllers** (`stockController`, `pedidoController`) cuando debería estar en services o en un middleware de validación (Joi/Zod).
-24. **0 tests** (backend y frontend). Sólo `.http` manuales.
-25. **`console.log` regado en services y repositorios** (debería ser un logger configurable).
-26. **`window.location.href = '/login'`** en `pedidos.component.ts` → debería usar `Router`.
-27. **Duplicación de fuente de verdad** en `AuthService`: lee y mantiene `BehaviorSubject` + `localStorage` y los dos pueden desincronizarse.
-28. **`AdminDashboardComponent` / `AdminHomeComponent`** importados con alias inconsistente desde `app.routes.ts`.
-29. **`stockController.createCerveza` no permite `stock_actual=0` ni `activo=false`** explícitamente (mismo bug de falsy del punto 11).
-30. **Sin guard global**: la ruta raíz `'/'` requiere `AuthGuard` pero no hay redirección inicial bien definida.
+13. **URLs hardcodeadas + mezcla de Axios + HttpClient en el frontend Angular legado** (`http://localhost:3000` en 4 servicios; Axios solo en `AuthService`). Aplica al cliente Angular en reemplazo; el frontend React usa Axios con una constante `API_URL` centralizada.
+14. **Naming inconsistente** (Angular legado): `UsuarioService.ts` vs `cerveza.service.ts` vs `pedidos.service.ts`.
+15. **Routing inconsistente**: `/api/auth/`, `/api/usuarios/` con prefijo, pero `/stock`, `/pedido`, `/` sin él.
+16. **Lógica de validación en controllers** (`stockController`, `pedidoController`) cuando debería estar en services o en un middleware de validación (Joi/Zod). _La validación es funcionalmente correcta tras el commit `5f8172e`, pero sigue dispersa en los controllers._
+17. **0 tests** (backend y frontend). Sólo `.http` manuales. **Sin CI/CD.**
+18. **`console.log` regado en services y repositorios** (debería ser un logger configurable). _Ya no se loguean datos sensibles, pero sigue faltando un logger._
+19. **`window.location.href = '/login'`** en `pedidos.component.ts` (Angular legado) → debería usar `Router`.
+20. **Duplicación de fuente de verdad** en `AuthService` (Angular legado): lee y mantiene `BehaviorSubject` + `localStorage` y los dos pueden desincronizarse.
+21. **`AdminDashboardComponent` / `AdminHomeComponent`** importados con alias inconsistente desde `app.routes.ts` (Angular legado).
+22. **Sin guard global** (Angular legado): la ruta raíz `'/'` requiere `AuthGuard` pero no hay redirección inicial bien definida.
+
+✅ **(Corregido — commit 5f8172e)** El bug de falsy en `stockController.createCerveza` (no permitía `stock_actual = 0` ni `activo = false`) está resuelto — ver punto 11 de la sección _Corregido_.
 
 ---
 
@@ -169,32 +197,34 @@ El stack es coherente y la separación en capas del backend es limpia. La debili
 
 ### Seguridad (prioridad 1)
 
-1. Mover `JWT_SECRET` y la URI completa de Mongo a `.env`. Validar al boot que estén definidas (fallar fuerte si no).
-2. Crear `backEnd/middlewares/auth.js` con `verifyToken` (lee `Authorization: Bearer …`) y `requireRole(...roles)`. Aplicarlos a todas las rutas excepto `/api/auth/*`.
-3. En el frontend, configurar un `HttpInterceptor` que adjunte `Authorization: Bearer ${token}` a todas las requests.
-4. Restringir CORS a los orígenes conocidos.
-5. Agregar `express-rate-limit` al login y register.
-6. Hashear con bcrypt rounds ≥ 12 (o usar `argon2`).
-7. Sanitizar inputs contra NoSQL injection (`express-mongo-sanitize`).
-8. Eliminar el log de password en plano en `createEmpleadoService`.
+1. Mover el **host/URI completa de Mongo a `.env`** (el `JWT_SECRET` ya se lee de `.env`). Validar al boot que las variables estén definidas (fallar fuerte si no) y **quitar el fallback `'TpCervezas'`** del secret.
+2. ~~Crear `backEnd/middlewares/auth.js` con `verifyToken` y `requireRole(...roles)`~~ ✅ Hecho (commit `5f8172e`): aplicados a todas las rutas excepto `/api/auth/*`.
+3. ~~En el frontend, adjuntar `Authorization: Bearer ${token}` a todas las requests~~ ✅ Hecho en React (interceptor de Axios en `http.ts`). Pendiente para el Angular legado (que se reemplaza).
+4. ~~Restringir CORS a los orígenes conocidos~~ ✅ Hecho (regex `localhost`).
+5. Agregar `express-rate-limit` al login y register. _(Pendiente.)_
+6. Hashear con bcrypt rounds ≥ 12 (o usar `argon2`). _(Pendiente — sigue en 10 rounds.)_
+7. ~~Sanitizar inputs contra NoSQL injection~~ ✅ Parcial: `findUserByEmail` coerciona el email a string. Evaluar `express-mongo-sanitize` para una cobertura general.
+8. ~~Eliminar el log de password en plano en `createEmpleadoService`~~ ✅ Hecho.
+9. Agregar `helmet`/headers de seguridad. _(Pendiente.)_
+10. Migrar el JWT del frontend de `localStorage` a `httpOnly cookie` (XSS). _(Pendiente.)_
 
 ### Calidad
 
-9. Introducir un **validator schema** (Zod o Joi) por endpoint y un middleware de validación.
-10. **Middleware central de errores** que mapee `error.status` y serialice un payload uniforme.
-11. **Transacción Mongo** para `createPedido` (validar stock, descontar, crear pedido).
-12. Lógica de **restitución de stock** cuando un pedido se rechaza o se elimina.
-13. Arreglar el `ref: 'cervezas'` → `ref: 'Cerveza'`, y agregar `populate` en `pedidoRepository.getAllPedidos`.
-14. **Tests** mínimos: smoke tests con supertest del backend (auth, stock, pedido) y al menos 2 specs por componente crítico del front.
-15. Reemplazar `console.*` por un logger (`pino` o `winston`) configurable por nivel.
-16. Unificar HTTP client en el frontend (sólo `HttpClient`) y centralizar `apiUrl` en `environment.ts`.
+11. Introducir un **validator schema** (Zod o Joi) por endpoint y un middleware de validación (la validación actual es correcta pero sigue dispersa en los controllers).
+12. **Middleware central de errores** que mapee `error.status` y serialice un payload uniforme (hoy el mapeo de `error.status` está sólo en `authController`).
+13. ~~**Transacción / consistencia de stock** para `createPedido`~~ ✅ Parcial: descuento atómico por ítem con rollback. Falta una **transacción Mongo multi-documento** real.
+14. ~~Lógica de **restitución de stock** cuando un pedido se rechaza o se elimina~~ ✅ Hecho.
+15. ~~Arreglar el `ref: 'cervezas'` → `ref: 'Cerveza'`~~ ✅ Hecho. Falta **agregar `populate`** en las queries de pedido (el ref ya está corregido pero no se invoca).
+16. **Tests** mínimos: smoke tests con supertest del backend (auth, stock, pedido) y al menos 2 specs por componente crítico del front. _(Pendiente.)_
+17. Reemplazar `console.*` por un logger (`pino` o `winston`) configurable por nivel. _(Pendiente.)_
+18. En el frontend React, mantener Axios + `API_URL` centralizada (ya hecho). En el Angular legado, unificar HTTP client y centralizar `apiUrl` en `environment.ts` (de no descartarse el cliente).
 
 ### Producto
 
-17. Paginación en listados.
-18. Endpoint dedicado `PATCH /pedido/:id/aprobar` y `/rechazar` (en vez del genérico `PATCH /pedido/:id` que acepta cualquier campo).
-19. Vista de auditoría de pedidos aprobados (ya hay `aprobado_por` y `fecha_aprobacion`).
-20. Histórico de stock — hoy `stock_actual` se sobrescribe sin trazabilidad.
+19. Paginación en listados.
+20. Endpoint dedicado `PATCH /pedido/:id/aprobar` y `/rechazar` (en vez del genérico `PATCH /pedido/:id` que acepta cualquier campo).
+21. Vista de auditoría de pedidos aprobados (ya hay `aprobado_por` y `fecha_aprobacion`).
+22. Histórico de stock — hoy `stock_actual` se sobrescribe sin trazabilidad.
 
 ---
 

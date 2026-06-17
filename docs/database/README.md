@@ -57,7 +57,7 @@ erDiagram
     }
 
     ITEM_PEDIDO {
-        ObjectId cerveza FK "ref 'cervezas' (bug), required"
+        ObjectId cerveza FK "ref 'Cerveza', required"
         number cantidad "required"
     }
 ```
@@ -103,7 +103,7 @@ erDiagram
 | `aprobado_por` | ObjectId | no | `null` | FK → `Usuario` |
 | `fecha_aprobacion` | Date | no | `null` | se setea sólo al aprobar |
 | `cervezas` | Array<subdoc> | sí | — | al menos requerido por validación de controller |
-| `cervezas[].cerveza` | ObjectId | sí | — | FK → cerveza (`ref: 'cervezas'`, **bug**) |
+| `cervezas[].cerveza` | ObjectId | sí | — | FK → cerveza (`ref: 'Cerveza'`) |
 | `cervezas[].cantidad` | Number | sí | — | |
 | `createdAt` / `updatedAt` | Date | auto | auto | timestamps |
 
@@ -136,14 +136,14 @@ No hay índices secundarios explícitos sobre `pedidos.usuario_id` ni `pedidos.e
 
 ## 6. Problemas conocidos del modelo
 
-1. **`ref: 'cervezas'` incorrecto** ([Pedido.js:11](../../backEnd/models/Pedido.js#L11)): el modelo está registrado como `'Cerveza'`. `populate('cervezas.cerveza')` no resolverá correctamente.
-2. **Sin `populate` en las queries**: `getAllPedidos`, `getPedidosByUsuario` y `getPedidoById` devuelven sólo ObjectIds; el frontend debe resolver nombres por su cuenta.
-3. **Stock sin trazabilidad**: `stock_actual` se sobrescribe; no hay histórico de movimientos.
-4. **Sin transacciones**: el descuento de stock y la creación del pedido son operaciones separadas (ver [BUSINESS_RULES §4.3](../business/BUSINESS_RULES.md#43-pedido)).
-5. **`password` se retorna en lecturas** (`GET /api/usuarios`) por falta de `select: false` o proyección.
+1. ✅ **Corregido (commit 5f8172e)** — **`ref` del subdocumento**: ahora es `ref: 'Cerveza'` ([Pedido.js:11](../../backEnd/models/Pedido.js#L11)), coincide con el modelo registrado, por lo que `populate('cervezas.cerveza')` ya resolvería correctamente.
+2. **Sin `populate` en las queries** ⚠️ pendiente: `getAllPedidos`, `getPedidosByUsuario` y `getPedidoById` devuelven sólo ObjectIds; el frontend debe resolver nombres por su cuenta. (El `ref` ya está corregido; falta invocar `populate`.)
+3. **Stock sin trazabilidad** ⚠️ pendiente: `stock_actual` se sobrescribe; no hay histórico de movimientos.
+4. **Sin transacción multi-documento** ⚠️ pendiente: no se usa una transacción Mongo. ✅ Mitigado (commit 5f8172e): el descuento de stock es **atómico y condicional** (`findOneAndUpdate` con `stock_actual: { $gte: cantidad }`) con **rollback** si algún ítem falla, y se **restituye stock** al rechazar o eliminar un pedido (ver [BUSINESS_RULES §4.3](../business/BUSINESS_RULES.md#43-pedido)). Aun así no es una transacción real.
+5. ✅ **Corregido (commit 5f8172e)** — **`password` ya no se retorna**: `getAllUsuariosRepository` usa `.select('-password')` y el update de usuario también excluye el hash.
 
 > Detalle de campos y reglas funcionales en [BUSINESS_RULES §2](../business/BUSINESS_RULES.md#2-entidades). Contratos de API en [docs/api](../api/README.md).
 
 ---
 
-_Documentación derivada de los schemas Mongoose. Última verificación: 2026-06-16._
+_Documentación derivada de los schemas Mongoose. Última verificación: 2026-06-17._

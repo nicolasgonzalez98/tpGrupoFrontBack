@@ -2,6 +2,8 @@
 
 Documento técnico de la arquitectura del sistema **tpGrupoFrontBack** (cervezas + pedidos).
 
+> **Última actualización:** 2026-06-17. Incorpora las correcciones de seguridad y correctitud del commit `5f8172e` (autenticación/autorización en el backend, descuento atómico de stock con rollback, whitelist de campos, CORS restringido, secret por entorno, etc.). Los hallazgos resueltos quedan marcados con ✅ y los pendientes se mantienen.
+
 ---
 
 ## 1. Arquitectura general
@@ -19,7 +21,7 @@ Aplicación cliente/servidor clásica de tres capas físicas:
 ```
 
 - **Sin gateway, sin balanceador, sin cache.** Un único proceso Node sirve la API.
-- **Estado de sesión 100% en el cliente**: el JWT se guarda en `localStorage` y se replica un objeto `IUsuario` parcial allí mismo.
+- **Sesión con JWT validado en el backend**: el front guarda el JWT en `localStorage` y lo envía en `Authorization: Bearer`; el backend lo verifica y deriva `{ _id, rol }` del token (middleware `verifyToken`). Se mantiene una copia parcial de `IUsuario` en `localStorage` solo para UX.
 - **Acoplamiento por URL**: el front asume `http://localhost:3000` hardcodeado en cada `Service`.
 
 ---
@@ -35,7 +37,7 @@ Aplicación cliente/servidor clásica de tres capas físicas:
 | jsonwebtoken | 9.0 | Emisión de JWT en login |
 | bcrypt | 6.0 | Hash de passwords |
 | dotenv | 16.5 | Carga de variables de entorno |
-| cors | 2.8 | CORS (configurado en modo abierto) |
+| cors | 2.8 | CORS (restringido a `localhost`, commit 5f8172e) |
 | nodemon | 3.1 (dev) | Hot reload |
 
 ### Frontend
@@ -55,7 +57,10 @@ Aplicación cliente/servidor clásica de tres capas físicas:
 
 ```
                 ┌─────────────────────────────────────────────────┐
-HTTP request →  │  routes/             autRoutes, cervezaRoutes,  │
+HTTP request →  │  middlewares/        verifyToken (JWT) +        │
+                │                      requireRole (autorización) │
+                ├─────────────────────────────────────────────────┤
+                │  routes/             autRoutes, cervezaRoutes,  │
                 │                      stockRoutes, pedidoRoutes, │
                 │                      adminUsuarioRoutes         │
                 ├─────────────────────────────────────────────────┤
@@ -80,15 +85,15 @@ La separación está prolijamente respetada en todos los módulos (auth, cerveza
 
 ### Mapa de rutas
 
-| Prefijo | Archivo | Endpoints | Rol esperado* |
+| Prefijo | Archivo | Endpoints | Autenticación / Rol exigido por el backend* |
 |---|---|---|---|
-| `/api/auth` | [authRoutes.js](../../backEnd/routes/authRoutes.js) | `POST /register`, `POST /login` | público |
-| `/api/usuarios` | [adminUsuarioRoutes.js](../../backEnd/routes/adminUsuarioRoutes.js) | `GET /`, `POST /`, `PATCH /:id` | admin |
-| `/stock` | [stockRoutes.js](../../backEnd/routes/stockRoutes.js) | CRUD cervezas | admin / empleado |
-| `/pedido` | [pedidoRoutes.js](../../backEnd/routes/pedidoRoutes.js) | CRUD pedidos + `GET /usuario/:id` | cliente (crear), admin / empleado (gestionar) |
-| `/` | [cervezaRoutes.js](../../backEnd/routes/cervezaRoutes.js) | `GET /`, `GET /:id` | público (listado para cliente) |
+| `/api/auth` | [authRoutes.js](../../backEnd/routes/authRoutes.js) | `POST /register`, `POST /login` | público (sin token) |
+| `/api/usuarios` | [adminUsuarioRoutes.js](../../backEnd/routes/adminUsuarioRoutes.js) | `GET /`, `POST /`, `PATCH /:id` | JWT + `admin` |
+| `/stock` | [stockRoutes.js](../../backEnd/routes/stockRoutes.js) | CRUD cervezas | JWT + `admin` / `empleado` (todas las rutas) |
+| `/pedido` | [pedidoRoutes.js](../../backEnd/routes/pedidoRoutes.js) | `POST /`, `GET /`, `GET /:id`, `GET /usuario/:id`, `PATCH /:id`, `DELETE /:id` | JWT obligatorio. `POST /` → `cliente`; `GET /` (todos), `PATCH /:id`, `DELETE /:id` → `admin` / `empleado`; `GET /:id` y `GET /usuario/:id` → cualquier rol autenticado |
+| `/` | [cervezaRoutes.js](../../backEnd/routes/cervezaRoutes.js) | `GET /`, `GET /:id` | JWT (cualquier rol autenticado) |
 
-(*) El rol se asume desde el frontend; **el backend no lo valida hoy.**
+(*) ✅ Corregido (commit 5f8172e). El backend ahora valida el JWT y los roles vía los middlewares `verifyToken` / `requireRole` ([backEnd/middlewares/auth.js](../../backEnd/middlewares/auth.js)). Todas las rutas exigen token salvo `/api/auth/register` y `/api/auth/login`. Los guards del frontend pasan a ser solo UX; la autorización real es del backend.
 
 ---
 
@@ -129,7 +134,7 @@ La separación está prolijamente respetada en todos los módulos (auth, cerveza
 - `AdminGuard` / `EmpleadoGuard` / `ClienteGuard` — chequean `user.rol`.
 - `RoleGuard` — versión genérica que lee `route.data.roles`.
 
-Los guards son **client-side only**. Funcionan como UX para ocultar pantallas, no como autorización real.
+Los guards son **client-side only**. Funcionan como UX para ocultar pantallas; la autorización real ahora la impone el backend (`verifyToken` + `requireRole`, commit 5f8172e). La migración a React (`frontReact/`) envía el `Authorization: Bearer` mediante un interceptor de Axios ([frontReact/src/services/http.ts](../../frontReact/src/services/http.ts)) que además hace `logout` ante un `401`. El front Angular viejo quedó intencionalmente roto (no manda token).
 
 ---
 
@@ -151,13 +156,16 @@ Los guards son **client-side only**. Funcionan como UX para ocultar pantallas, n
    │                            │                                │                            │
    │ arma carrito + click       │                                │                            │
    ├───────────────────────────►│                                │                            │
-   │                            │ POST /pedido  {usuario_id,     │                            │
-   │                            │   cervezas:[{cerveza,cantidad}]}                            │
+   │                            │ POST /pedido  (Bearer token)   │                            │
+   │                            │   {cervezas:[{cerveza,cantidad}]}                           │
    │                            ├───────────────────────────────►│                            │
+   │                            │                                │ verifyToken → req.user._id │
+   │                            │                                │ requireRole('cliente')     │
+   │                            │                                │ usuario_id = token (no body)│
+   │                            │                                │ validar cantidad entero > 0│
    │                            │                                │ por cada item:             │
-   │                            │                                │   getCervezaById           │
-   │                            │                                │   validar stock_actual     │
-   │                            │                                │   descontarStock           │
+   │                            │                                │   descuento atómico $gte   │
+   │                            │                                │   (rollback si falta stock)│
    │                            │                                │ pedido.save(estado=        │
    │                            │                                │   "pendiente")             │
    │                            │                                ├───────────────────────────►│
@@ -166,7 +174,7 @@ Los guards son **client-side only**. Funcionan como UX para ocultar pantallas, n
    │◄───────────────────────────┤                                │                            │
 ```
 
-> El descuento de stock y la creación del pedido **no son transaccionales**: bug de race condition documentado en el README.
+> ✅ Corregido (commit 5f8172e): el `usuario_id` se toma del token (no del body) y la cantidad se valida como entero > 0. El descuento de stock usa una actualización **atómica condicional** (`$gte`) con **rollback** de los ítems ya descontados si alguno falla, lo que mitiga la race condition / sobreventa que antes documentaba el README. Nota: aún **no** hay transacción multi-documento real (es descuento atómico por ítem + compensación manual), ver §8.
 
 ### Flujo 2: Empleado/Admin aprueba pedido
 
@@ -180,14 +188,14 @@ Los guards son **client-side only**. Funcionan como UX para ocultar pantallas, n
 
 ```
 POST /api/auth/login {email, password}
-  └─ findUserByEmail
+  └─ findUserByEmail (email coercionado a string → previene NoSQL injection)
      └─ user.activo === false → 404
      └─ bcrypt.compare(password, user.password) → false → 401
-     └─ jwt.sign({_id, rol}, SECRET_KEY, {expiresIn:'1h'})
+     └─ jwt.sign({_id, rol}, SECRET_KEY=process.env.JWT_SECRET, {expiresIn:'1h'})
   ← {token, user:{_id, email, nombre, rol, activo}}
 ```
 
-El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubject` de `AuthService`.
+✅ Corregido (commit 5f8172e): el login ahora respeta `error.status` y devuelve `401`/`404` según corresponda (antes siempre respondía `500`). El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubject` de `AuthService`. En la app React el token viaja en cada request vía interceptor de Axios.
 
 ---
 
@@ -195,8 +203,9 @@ El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubje
 
 ### Backend
 
-- **`backEnd/index.js`** — Bootstrap. Conecta a MongoDB, registra middlewares (`cors`, `express.json`) y los routers.
-- **`backEnd/services/authService.js`** — Registro + login + emisión JWT. **JWT_SECRET hardcodeado**.
+- **`backEnd/index.js`** — Bootstrap. Conecta a MongoDB, registra middlewares (`cors` restringido a `localhost`, `express.json`) y los routers.
+- **`backEnd/middlewares/auth.js`** — `verifyToken` (valida `Authorization: Bearer`, deja `{ _id, rol }` en `req.user`) y `requireRole(...roles)` (autorización por rol). Lee el secret de `process.env.JWT_SECRET`.
+- **`backEnd/services/authService.js`** — Registro + login + emisión JWT. ✅ El secret ahora se toma de `process.env.JWT_SECRET` (commit 5f8172e), ya no está hardcodeado en el código.
 - **`backEnd/services/pedidoService.js`** — Único service con lógica de negocio compuesta (validación de stock + descuento + creación).
 - **`backEnd/models/Pedido.js`** — Modelo con `estado` enum (`pendiente|aprobado|rechazado`) y `cervezas[]` embebido.
 
@@ -214,11 +223,11 @@ El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubje
 | Dependencia | Por qué es crítica |
 |---|---|
 | **MongoDB Atlas** | Único almacén de datos. Caída del cluster = caída total. URI hardcodeada al cluster `cluster0.zbfn2s4`. |
-| **jsonwebtoken** | Toda la sesión depende de un JWT. Sin él, no hay login. Secret hoy es `"TpCervezas"` — rotarlo invalida todas las sesiones. |
+| **jsonwebtoken** | Toda la sesión depende de un JWT. Sin él, no hay login. El secret ahora se lee de `process.env.JWT_SECRET` — rotarlo invalida todas las sesiones. |
 | **bcrypt** | Hash de passwords. Versión 6.x (mayor) cambió internals; downgrades pueden romper validación. |
 | **Angular 19 + PrimeNG 19** | UI íntegramente acoplada a PrimeNG (Card, Button, Dialog, Drawer, InputText…). Migrar de versión requiere revisar todos los componentes. |
-| **Axios + HttpClient (frontend)** | Dos clientes HTTP coexistiendo. Si se quiere agregar un interceptor (p. ej. para `Authorization`), hay que duplicarlo. |
-| **`.env` del backend** | `PORT`, `DB_USER`, `DB_PASSWORD`. Si falta, la app arranca en puerto aleatorio (no hay default) y no conecta a Mongo. |
+| **Axios + HttpClient (frontend)** | Dos clientes HTTP coexistiendo en el front Angular. La migración a React (`frontReact/`) unifica en Axios con un interceptor único que adjunta `Authorization: Bearer` ([frontReact/src/services/http.ts](../../frontReact/src/services/http.ts)). |
+| **`.env` del backend** | `PORT` (default `3000` si falta), `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`. Sin credenciales de Mongo no conecta a la base. |
 
 ---
 
@@ -226,12 +235,12 @@ El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubje
 
 ### Riesgos de correctitud
 
-1. **Race condition en `createPedido`** — `pedidoService.createPedido` ejecuta validación + descuento + persistencia **sin transacción**. Dos pedidos casi simultáneos sobre la misma cerveza pueden sobrevender stock.
-2. **Stock huérfano al rechazar pedido** — el descuento ya ocurrió en la creación; rechazar (`PATCH estado=rechazado`) o eliminar el pedido no devuelve stock.
-3. **`ref: 'cervezas'`** en el schema Pedido apunta a un modelo que **no existe** (el modelo se registra como `'Cerveza'`). `populate()` no funcionará correctamente.
-4. **Bug en `adminUsuarioService.updateUsuarioService`** ([línea 52](../../backEnd/services/adminUsuarioService.js#L52)): `throw error("...")` — `error` es la variable capturada en `catch`, no es invocable; lanza `TypeError`.
-5. **Validaciones falsy en `stockController`** — `if (stock_actual && ...)` ignora `0`, que es un valor legítimo.
-6. **`PORT` sin default** — `app.listen(undefined)` escucha en puerto aleatorio si no se carga el `.env`.
+1. ✅ **Corregido (commit 5f8172e) — Race condition en `createPedido`** — el descuento ahora es **atómico condicional** (`$gte`) con **rollback** de los ítems ya descontados si alguno falla, lo que mitiga la sobreventa de stock. (Ver §13 para la limitación residual: no es una transacción multi-documento real.)
+2. ✅ **Corregido (commit 5f8172e) — Stock huérfano al rechazar/eliminar pedido** — `updatePedido` restituye el stock al pasar a `rechazado` (y lo vuelve a reservar si se reactiva), y `deletePedidoById` restituye el stock de los pedidos que lo tenían reservado.
+3. ✅ **Corregido (commit 5f8172e) — `ref` del schema Pedido** — el `ref` ahora apunta a `'Cerveza'` (el nombre real del modelo), por lo que `populate()` ya es posible. *Pendiente:* las queries de pedido todavía **no llaman** a `populate` (ver §13).
+4. ✅ **Corregido (commit 5f8172e) — `adminUsuarioService.updateUsuarioService`** — se eliminó el `throw error("...")` que lanzaba un `TypeError`; ahora propaga el error correctamente y aplica una **whitelist de campos**.
+5. ✅ **Corregido (commit 5f8172e) — Validaciones falsy en `stockController`** — el controller ahora distingue correctamente `0`/`false` de valores ausentes.
+6. ✅ **Corregido (commit 5f8172e) — `PORT` sin default** — ahora hay un default de `3000` si no se carga el `.env`.
 
 ### Riesgos operacionales
 
@@ -244,9 +253,9 @@ El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubje
 
 ### Riesgos de escalabilidad
 
-13. **`getAllPedidos` sin populate ni proyección** — devuelve todos los pedidos sin paginar; el frontend después tiene que resolver nombres a partir de IDs sueltos.
-14. **`getAllUsuariosService`** trae todos los usuarios con password hash incluida.
-15. Single point of failure: un solo proceso Node, sin clúster ni PM2.
+13. **`getAllPedidos` sin populate ni proyección** *(pendiente)* — devuelve todos los pedidos sin paginar; el frontend después tiene que resolver nombres a partir de IDs sueltos. El `ref` del schema ya quedó corregido (§ riesgo 3), pero las queries todavía **no invocan** `populate`.
+14. ✅ **Corregido (commit 5f8172e) — `getAllUsuariosService`** — ahora excluye el campo `password` de la respuesta.
+15. Single point of failure *(pendiente)*: un solo proceso Node, sin clúster ni PM2.
 
 ---
 
@@ -256,51 +265,52 @@ El frontend guarda `token` y `user` en `localStorage` y emite los `BehaviorSubje
 
 ### Críticos
 
-| # | Hallazgo | Ubicación |
-|---|---|---|
-| **S1** | JWT secret hardcodeado (`"TpCervezas"`) | [authService.js:5](../../backEnd/services/authService.js#L5) |
-| **S2** | Ningún endpoint del backend verifica el JWT. `/stock`, `/pedido`, `/api/usuarios` están **públicos**. | Todos los `routes/*` |
-| **S3** | Autorización por rol **solo en el frontend** (guards). Un cliente puede llamar `PATCH /api/usuarios/:id` con `{rol:"admin"}` para escalar privilegios. | [adminUsuarioRepository.js:41](../../backEnd/repository/adminUsuarioRepository.js#L41) + ausencia de middleware |
-| **S4** | El frontend guarda el JWT pero **no lo envía** en `Authorization`. La sesión existe sólo del lado del cliente; el back no sabe quién está llamando. | servicios del frontend |
+| # | Hallazgo | Ubicación | Estado |
+|---|---|---|---|
+| **S1** | JWT secret hardcodeado (`"TpCervezas"`) → ahora se lee de `process.env.JWT_SECRET`. | [middlewares/auth.js:4](../../backEnd/middlewares/auth.js#L4), authService.js | ✅ Corregido (commit 5f8172e) |
+| **S2** | Ningún endpoint del backend verificaba el JWT (`/stock`, `/pedido`, `/api/usuarios` públicos) → ahora `verifyToken` protege todas las rutas salvo `/api/auth/register` y `/api/auth/login`. | [middlewares/auth.js](../../backEnd/middlewares/auth.js), todos los `routes/*` | ✅ Corregido (commit 5f8172e) |
+| **S3** | Autorización por rol solo en el frontend → ahora `requireRole` valida el rol en el backend por endpoint (ver Mapa de rutas §3). Escalar privilegios vía `PATCH /api/usuarios/:id` ya no es posible sin rol `admin`. | [middlewares/auth.js:25](../../backEnd/middlewares/auth.js#L25), routes/* | ✅ Corregido (commit 5f8172e) |
+| **S4** | El frontend guardaba el JWT pero no lo enviaba → la app React lo envía en `Authorization: Bearer` vía interceptor de Axios (401 → logout). | [frontReact/src/services/http.ts](../../frontReact/src/services/http.ts) | ✅ Corregido (commit 5f8172e) |
 
 ### Altos
 
-| # | Hallazgo | Ubicación |
-|---|---|---|
-| **S5** | CORS abierto a todos los orígenes (`app.use(cors())`) | [index.js:14](../../backEnd/index.js#L14) |
-| **S6** | Sin rate limiting en `/api/auth/login` → fuerza bruta posible | [authRoutes.js](../../backEnd/routes/authRoutes.js) |
-| **S7** | JWT guardado en `localStorage` → expuesto a XSS | [authService.ts:47-48](../../frontEnd/src/services/authService.ts#L47-L48) |
-| **S8** | NoSQL injection: `findUserByEmail({email})` acepta cualquier objeto del request (`{$ne:null}` matchea el primer user) | [userRepository.js:9](../../backEnd/repository/userRepository.js#L9) |
-| **S9** | `updateUsuario` y `updateCerveza` aceptan **cualquier campo del body** y lo pasan a `findByIdAndUpdate`. Permite mass-assignment. | adminUsuarioRepository, cervezaRepository |
-| **S10** | `createPedido` confía en `usuario_id` que viene en el body — un cliente puede crear pedidos a nombre de otro usuario | [pedidoController.js:5](../../backEnd/controllers/pedidoController.js#L5) |
+| # | Hallazgo | Ubicación | Estado |
+|---|---|---|---|
+| **S5** | CORS abierto a todos los orígenes (`app.use(cors())`) → restringido a `localhost`. | [index.js](../../backEnd/index.js) | ✅ Corregido (commit 5f8172e) |
+| **S6** | Sin rate limiting en `/api/auth/login` → fuerza bruta posible | [authRoutes.js](../../backEnd/routes/authRoutes.js) | ⏳ Pendiente |
+| **S7** | JWT guardado en `localStorage` → expuesto a XSS | servicios del frontend | ⏳ Pendiente |
+| **S8** | NoSQL injection: `findUserByEmail({email})` aceptaba cualquier objeto del request (`{$ne:null}`) → ahora el `email` se coerciona a `string` antes de la query. | [userRepository.js](../../backEnd/repository/userRepository.js) | ✅ Corregido (commit 5f8172e) |
+| **S9** | `updateUsuario` permitía mass-assignment → ahora aplica **whitelist de campos**. *(El `updateCerveza`/stock sigue sin whitelist explícita; revisar.)* | adminUsuarioService | ✅ Corregido para usuarios (commit 5f8172e) |
+| **S10** | `createPedido` confiaba en `usuario_id` del body → ahora se deriva del token (`req.user._id`); un cliente ya no puede crear pedidos a nombre de otro. | [pedidoController.js](../../backEnd/controllers/pedidoController.js) | ✅ Corregido (commit 5f8172e) |
 
 ### Medios
 
-| # | Hallazgo |
-|---|---|
-| **S11** | Password en plano logueada antes del hash en `createEmpleadoService` |
-| **S12** | Sin validación de complejidad/longitud de password en register |
-| **S13** | bcrypt con `saltRounds=10` (default; aceptable pero se recomienda ≥12 en 2026) |
-| **S14** | `expiresIn: '1h'` razonable, pero no hay refresh tokens ni revocación |
-| **S15** | Mensajes de error revelan si el email existe (`Usuario no encontrado` vs `Contraseña incorrecta`) → enumeración de usuarios |
-| **S16** | Stack traces y mensajes de error de Mongoose se reenvían tal cual al cliente (`error.message`) |
-| **S17** | Sin headers de seguridad (`helmet` no está instalado): no hay CSP, HSTS, X-Frame-Options, etc. |
-| **S18** | `getAllUsuariosService` retorna el campo `password` (hash) en cada usuario |
+| # | Hallazgo | Estado |
+|---|---|---|
+| **S11** | Password en plano logueada antes del hash en `createEmpleadoService` → se quitaron los logs que filtraban password/datos. | ✅ Corregido (commit 5f8172e) |
+| **S12** | Sin validación de complejidad/longitud de password en register | ⏳ Pendiente |
+| **S13** | bcrypt con `saltRounds=10` (default; aceptable pero se recomienda ≥12 en 2026) | ⏳ Pendiente |
+| **S14** | `expiresIn: '1h'` razonable, pero no hay refresh tokens ni revocación | ⏳ Pendiente |
+| **S15** | Mensajes de error revelan si el email existe (`Usuario no encontrado` vs `Contraseña incorrecta`) → enumeración de usuarios | ⏳ Pendiente |
+| **S16** | Stack traces y mensajes de error de Mongoose se reenvían tal cual al cliente (`error.message`) | ⏳ Pendiente |
+| **S17** | Sin headers de seguridad (`helmet` no está instalado): no hay CSP, HSTS, X-Frame-Options, etc. | ⏳ Pendiente |
+| **S18** | `getAllUsuariosService` retornaba el campo `password` (hash) → ahora se excluye. | ✅ Corregido (commit 5f8172e) |
 
 ### Bajos
 
-| # | Hallazgo |
-|---|---|
-| **S19** | El navegador del cliente confía en `user` deserializado desde `localStorage` para decidir permisos. Manipulable. |
-| **S20** | `console.log` con datos del request (incluyendo IDs y bodies) en repositorios. |
+| # | Hallazgo | Estado |
+|---|---|---|
+| **S19** | El navegador del cliente confía en `user` deserializado desde `localStorage` para decidir permisos (UX). Manipulable — pero la autorización real ya la impone el backend (S2/S3). El JWT en `localStorage` sigue expuesto a XSS (ver S7). | ⏳ Pendiente |
+| **S20** | `console.log` con datos del request (incluyendo IDs y bodies) en repositorios → se quitaron los logs sensibles. | ✅ Corregido (commit 5f8172e) |
 
 ---
 
 ## 10. Próximos pasos recomendados (orden sugerido)
 
-1. **Cerrar S1–S4 en una sola PR**: secret a `.env`, middleware `verifyToken` + `requireRole`, interceptor de `Authorization` en el front, derivar `usuario_id` del token en `createPedido`.
-2. Whitelist de campos en `updateUsuario`/`updateCerveza` (sólo lo permitido).
-3. Transacción Mongo en `createPedido` + restitución de stock al rechazar.
-4. Validación con Zod o Joi en todos los endpoints + middleware central de errores.
-5. Tests con Jest + supertest, al menos de auth, stock y pedido.
-6. Logger estructurado y eliminación de `console.*`.
+1. ✅ **Hecho (commit 5f8172e) — S1–S4**: secret en `process.env.JWT_SECRET`, middleware `verifyToken` + `requireRole`, interceptor de `Authorization` en el front React, y `usuario_id` derivado del token en `createPedido`.
+2. **Whitelist de campos**: ya aplicada en `updateUsuario` ✅ (commit 5f8172e). **Pendiente:** replicarla en `updateCerveza`/stock.
+3. **Transacción Mongo real en `createPedido`** *(pendiente)*: hoy hay descuento atómico por ítem (`$gte`) + rollback manual y restitución de stock al rechazar/eliminar ✅, pero no una transacción multi-documento.
+4. Validación con Zod o Joi en todos los endpoints + middleware central de errores *(pendiente)*. Incluye no reenviar mensajes de Mongoose al cliente (S16) y evitar enumeración de usuarios (S15).
+5. Tests con Jest + supertest, al menos de auth, stock y pedido *(pendiente; sin tests ni CI/CD)*.
+6. Logger estructurado y eliminación de `console.*` *(pendiente; ya se quitaron los logs sensibles — S11/S20)*.
+7. Endurecimiento adicional *(pendiente)*: `helmet` (S17), rate limiting en login (S6), `saltRounds ≥ 12` (S13), refresh tokens/revocación (S14), paginación de listados, `populate` en queries de pedido, filtrar cervezas `activo:false` del catálogo, y mover la URI de Mongo fuera de `config.js`.

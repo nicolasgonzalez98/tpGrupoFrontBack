@@ -59,7 +59,7 @@ El sistema modela una pequeña distribuidora de cervezas:
 | `cervezas[].cantidad` | number | requerido. |
 | `createdAt`, `updatedAt` | timestamps | automáticos |
 
-> ⚠️ Bug conocido: el schema declara `ref: 'cervezas'`, pero el modelo está registrado como `'Cerveza'`. `populate` no funcionará hasta arreglarlo.
+> ✅ Corregido (commit 5f8172e, 2026-06-17): el schema ahora declara `ref: 'Cerveza'` (coincide con el modelo registrado), por lo que `populate` ya funcionaría. ⚠️ Pendiente: las queries de pedido todavía no hacen `populate`, así que en la práctica los nombres aún no se resuelven en el backend (ver §4.3).
 
 ---
 
@@ -84,7 +84,19 @@ El sistema modela una pequeña distribuidora de cervezas:
 | Crear empleado | ❌ | ❌ | ✅ |
 | Cambiar rol / activar / desactivar usuario | ❌ | ❌ | ✅ |
 
-> ⚠️ **Estado de implementación**: esta matriz se cumple **únicamente en el frontend** mediante guards (`AuthGuard`, `RoleGuard`, `AdminGuard`, `EmpleadoGuard`, `ClienteGuard`). El backend hoy **no autoriza nada**: cualquier rol puede llamar cualquier endpoint si conoce la URL. Ver [ARCHITECTURE.md §9](../architecture/ARCHITECTURE.md#9-problemas-de-seguridad).
+> ✅ **Estado de implementación** — Corregido (commit 5f8172e, 2026-06-17): la matriz ahora se cumple **también en el backend**, no solo en el frontend. Todas las rutas (salvo `/api/auth/*`) pasan por `verifyToken` (valida el JWT del header `Authorization: Bearer <token>`) y, donde corresponde, por `requireRole(...)` ([middlewares/auth.js](../../backEnd/middlewares/auth.js)). Autorización efectiva por endpoint:
+>
+> | Recurso | Middleware | Roles permitidos |
+> |---|---|---|
+> | `/api/auth/*` | (ninguno) | público |
+> | `/api/usuarios` (listar/crear empleado/PATCH) | `verifyToken + requireRole('admin')` | admin |
+> | `/stock/*` (crear/modificar/eliminar/listar) | `verifyToken + requireRole('admin','empleado')` | admin, empleado |
+> | Catálogo `GET /` y `GET /:id` | `verifyToken` | cualquier autenticado |
+> | `POST /pedido` | `verifyToken + requireRole('cliente')` | cliente |
+> | `GET /pedido` (todos), `PATCH /pedido/:id`, `DELETE /pedido/:id` | `verifyToken + requireRole('admin','empleado')` | admin, empleado |
+> | `GET /pedido/:id`, `GET /pedido/usuario/:usuarioId` | `verifyToken` | cualquier autenticado |
+>
+> Un token ausente o inválido devuelve **401**; un rol sin permiso devuelve **403**. Los guards del frontend (`AuthGuard`, `RoleGuard`, `AdminGuard`, `EmpleadoGuard`, `ClienteGuard`) siguen actuando como primera línea de UX, pero ya no son la única barrera. Ver [ARCHITECTURE.md §9](../architecture/ARCHITECTURE.md#9-problemas-de-seguridad).
 
 ---
 
@@ -100,11 +112,13 @@ El sistema modela una pequeña distribuidora de cervezas:
 
 #### Login (`POST /api/auth/login`)
 - Si el usuario no existe → el service lanza error con `status 404` (revela existencia, enumerar usuarios es posible).
-- Si `activo === false` → el service lanza error con `status 404` (mensaje: "El usuario no esta activo").
+- Si `activo === false` → el service lanza error con `status 404` (mensaje: "El usuario no esta activo.").
 - Si password no coincide → el service lanza error con `status 401`.
 - Si todo OK, se emite JWT firmado con payload `{_id, rol}` y `expiresIn: '1h'`.
 
-> ⚠️ **Código vs. intención**: el `authController.login` hace `res.status(500)` fijo en el `catch` ([authController.js:16-18](../../backEnd/controllers/authController.js#L16-L18)) e **ignora `error.status`**. Por lo tanto, todos los fallos de login (usuario inexistente, inactivo o password incorrecta) devuelven **HTTP 500** al cliente, aunque el service distinga 404/401 internamente. El mensaje sí refleja el caso. Corrección sugerida: replicar el patrón de `register` (`res.status(error.status || 500)`). Ver [docs/api §3.2](../api/README.md#32-post-apiauthlogin).
+> ✅ **Código vs. intención** — Corregido (commit 5f8172e, 2026-06-17): el `authController.login` ahora hace `res.status(error.status || 500)` en el `catch` ([authController.js:16-18](../../backEnd/controllers/authController.js#L16-L18)), igual que `register`. Por lo tanto los fallos de login devuelven el HTTP correcto: **404** (usuario inexistente o inactivo), **401** (password incorrecta), y **500** solo ante errores inesperados. Antes el controller respondía **500** fijo en todos los casos. Ver [docs/api §3.2](../api/README.md#32-post-apiauthlogin).
+>
+> ⚠️ Pendiente: al distinguir 404 (no existe) de 401 (password incorrecta), el login sigue permitiendo **enumeración de usuarios**.
 
 #### Activar/desactivar y cambiar rol (`PATCH /api/usuarios/:id`)
 - El admin puede setear `activo: true/false` y/o cambiar el `rol`.
@@ -122,7 +136,7 @@ El sistema modela una pequeña distribuidora de cervezas:
 - `nombre` y `tipo` son obligatorios.
 - `stock_actual` y `stock_minimo` deben ser numéricos si vienen.
 - `activo` debe ser booleano si viene.
-- ⚠️ Bug: la validación `if (stock_actual && typeof stock_actual !== "number")` ignora `0` (falsy), por lo que un `stock_actual = 0` "pasa" sin validar tipo.
+- ✅ Corregido (commit 5f8172e, 2026-06-17): la validación ahora usa `if (stock_actual !== undefined && typeof stock_actual !== "number")` (ídem `stock_minimo` y `activo`), así que `stock_actual = 0` y `activo = false` ya se validan correctamente (antes el chequeo falsy los ignoraba).
 
 #### Modificar (`PATCH /stock/:id`)
 - Solo se actualizan los campos presentes en el body (las validaciones explícitas de tipo no se ejecutan aquí — confía en Mongoose).
@@ -140,36 +154,41 @@ El sistema modela una pequeña distribuidora de cervezas:
 ### 4.3 Pedido
 
 #### Crear (`POST /pedido`)
-- Body requerido: `{ usuario_id, cervezas: [{cerveza, cantidad}, ...] }`.
+- Solo lo puede invocar un **cliente** (`requireRole('cliente')`).
+- Body requerido: `{ cervezas: [{cerveza, cantidad}, ...] }`.
+- ✅ Corregido (commit 5f8172e, 2026-06-17): el `usuario_id` se deriva del **token** (`req.user._id`), **ya no se lee del body**. Un cliente ya no puede crear pedidos a nombre de otro usuario.
 - Validaciones en controller:
-  - `usuario_id` presente.
   - `cervezas` es array no vacío.
-  - Cada ítem tiene `cerveza` y `cantidad` (no se valida que `cantidad > 0` ni que sea entero).
-- Validaciones en service ([pedidoService.js:5-13](../../backEnd/services/pedidoService.js#L5-L13)):
-  - Cada cerveza referenciada **debe existir**.
-  - `stock_actual >= cantidad` para cada ítem (si falla, lanza `"Stock insuficiente para <nombre>"`).
+  - ✅ Corregido (commit 5f8172e, 2026-06-17): cada ítem debe tener `cerveza` y una `cantidad` **entera mayor a 0** (`Number.isInteger(item.cantidad) && item.cantidad > 0`). Antes `cantidad: 0` o negativa entraba al sistema (y una cantidad negativa **sumaba** stock vía `$inc`).
+- Validaciones en service ([pedidoService.js:6-39](../../backEnd/services/pedidoService.js#L6-L39)):
+  - Cada cerveza referenciada **debe existir** (si no, lanza `"Cerveza con ID <id> no encontrada"`).
+  - El descuento de stock es **atómico y condicional** (`findOneAndUpdate({ _id, stock_actual: { $gte: cantidad } }, { $inc: -cantidad })`); si para algún ítem no hay stock, lanza `"Stock insuficiente para <nombre>"`.
 - Si todo OK:
-  1. Descuenta `cantidad` del `stock_actual` de cada cerveza (vía `$inc: -cantidad`).
+  1. Descuenta `cantidad` del `stock_actual` de cada cerveza, ítem por ítem, de forma atómica.
   2. Persiste el pedido con `estado = "pendiente"`.
 
 #### Reglas de stock al crear
-- **No es transaccional**: el descuento y la creación del pedido son operaciones separadas. Si la creación del pedido falla después del descuento, el stock queda perdido.
-- **No es atómico ante concurrencia**: dos `createPedido` simultáneos pueden ver el mismo `stock_actual` y ambos descontar, sobrevendiendo stock.
+- ✅ Mitigado — atómico ante concurrencia (commit 5f8172e, 2026-06-17): el descuento usa `descontarStockSiHay`, que solo descuenta si `stock_actual >= cantidad` en la misma operación. Dos `createPedido` simultáneos ya no pueden sobrevender el mismo stock por carrera de lectura.
+- ✅ Mitigado — rollback ante fallo parcial (commit 5f8172e, 2026-06-17): si un ítem posterior no tiene stock, se **restituye** lo ya descontado de los ítems previos; y si la persistencia del pedido falla luego del descuento, también se restituye todo. El stock ya no se pierde silenciosamente.
+- ⚠️ Pendiente: **no hay transacción multi-documento real**. La consistencia se logra con descuento atómico por ítem + rollback manual, no con una sesión/transacción de Mongo. Ante un crash entre el descuento y el rollback el stock podría quedar inconsistente.
 
 #### Aprobar/rechazar (`PATCH /pedido/:id`)
+- Solo admin/empleado (`requireRole('admin','empleado')`).
 - Body acepta `{ aprobado_por, estado }`.
 - `estado` debe pertenecer a `['pendiente', 'aprobado', 'rechazado']`.
 - Si `estado === 'aprobado'`, automáticamente se setea `fecha_aprobacion = new Date()`.
-- ⚠️ **No se restituye stock al rechazar**: si un pedido se rechaza después de haber descontado stock, ese stock queda permanentemente perdido (no se devuelve).
+- ✅ Corregido (commit 5f8172e, 2026-06-17): el stock **sí se restituye al rechazar**. Si un pedido que tenía stock reservado (estado `pendiente` o `aprobado`) pasa a `rechazado`, se devuelve la `cantidad` de cada ítem (`restituirStock`). Y si se "des-rechaza" (de `rechazado` a `aprobado`/`pendiente`), el stock se **vuelve a reservar** (`descontarStockActualById`). Antes el stock quedaba permanentemente perdido al rechazar.
 
 #### Eliminar (`DELETE /pedido/:id`)
-- Borrado físico, sin restitución de stock.
+- Solo admin/empleado (`requireRole('admin','empleado')`).
+- Borrado físico (`findByIdAndDelete`).
+- ✅ Corregido (commit 5f8172e, 2026-06-17): si el pedido tenía stock reservado (estado `pendiente` o `aprobado`), al eliminarlo se **restituye** la `cantidad` de cada ítem. Un pedido ya `rechazado` no restituye (su stock ya fue devuelto al rechazarse).
 
 #### Listar
 - `GET /pedido` → todos (admin/empleado).
-- `GET /pedido/:id` → uno por ID.
-- `GET /pedido/usuario/:usuarioId` → todos los del usuario.
-- Ningún listado hace `populate`, así que los nombres de cervezas y de aprobador no vienen — el frontend debe resolverlos por su cuenta.
+- `GET /pedido/:id` → uno por ID (cualquier autenticado).
+- `GET /pedido/usuario/:usuarioId` → todos los del usuario (cualquier autenticado).
+- ⚠️ Pendiente: ningún listado hace `populate`, así que los nombres de cervezas y de aprobador no vienen — el frontend debe resolverlos por su cuenta. (El `ref` del schema ya está corregido a `'Cerveza'`, así que el `populate` funcionaría si se agregara; ver §2.3.)
 
 ---
 
@@ -188,16 +207,18 @@ El sistema modela una pequeña distribuidora de cervezas:
    │ empleado/admin    │           │ empleado/admin    │
    │ aprueba           │           │ rechaza           │
    │ estado=aprobado   │           │ estado=rechazado  │
-   │ fecha_aprobacion= │           │ (stock NO se      │
-   │ now               │           │  restituye ⚠️)    │
+   │ fecha_aprobacion= │           │ (stock SÍ se      │
+   │ now               │           │  restituye ✅)    │
    │ aprobado_por=X    │           │ aprobado_por=X    │
    └───────────────────┘           └───────────────────┘
 ```
 
+> ✅ Corregido (commit 5f8172e, 2026-06-17): al pasar a `rechazado` el stock reservado **se restituye** (antes quedaba perdido). Si un pedido `rechazado` vuelve a `aprobado`/`pendiente`, el stock se reserva de nuevo. Ver §4.3.
+
 **Transiciones permitidas** (por el enum y el repositorio):
 - `pendiente → aprobado`
 - `pendiente → rechazado`
-- (cualquier otra transición está técnicamente permitida porque no hay máquina de estados — la regla "solo desde pendiente" no está implementada).
+- ⚠️ Pendiente: cualquier otra transición sigue técnicamente permitida porque **no hay máquina de estados** — la regla "solo desde pendiente" no está implementada. La lógica de stock sí maneja correctamente el re-reservar/restituir según el estado origen/destino, pero no impide la transición en sí.
 
 ---
 
@@ -211,13 +232,14 @@ El sistema modela una pequeña distribuidora de cervezas:
 
 | Escenario | Resultado |
 |---|---|
-| Cliente arma pedido y lo envía con stock suficiente | OK, stock descuenta, pedido pendiente |
-| Cliente arma pedido y otro cliente le gana en concurrencia | Posible sobreventa (sin transacción) |
-| Empleado rechaza un pedido | Stock queda perdido (bug) |
-| Empleado elimina un pedido | Stock queda perdido (bug) |
+| Cliente arma pedido y lo envía con stock suficiente | OK, stock descuenta (atómico), pedido pendiente |
+| Cliente arma pedido y otro cliente le gana en concurrencia | ✅ Sin sobreventa: descuento atómico condicional (`$gte`); el segundo recibe "Stock insuficiente" (commit 5f8172e) |
+| Empleado rechaza un pedido | ✅ Stock se restituye (commit 5f8172e) |
+| Empleado elimina un pedido | ✅ Stock se restituye si estaba reservado (commit 5f8172e) |
 | Cliente intenta pedir más de lo disponible | Backend rechaza con "Stock insuficiente para X" |
-| Cerveza marcada inactiva | Sigue apareciendo en el listado y puede ser pedida (no se filtra) |
-| `stock_actual` queda por debajo de `stock_minimo` | No se notifica ni se bloquean nuevos pedidos |
+| Cliente envía `cantidad` 0 o negativa | ✅ Rechazado en el controller: debe ser entero > 0 (commit 5f8172e) |
+| Cerveza marcada inactiva | ⚠️ Pendiente: sigue apareciendo en el listado y puede ser pedida (no se filtra por `activo`) |
+| `stock_actual` queda por debajo de `stock_minimo` | ⚠️ Pendiente: `stock_minimo` no se usa en el backend; no se notifica ni se bloquean nuevos pedidos |
 
 ---
 
@@ -226,7 +248,7 @@ El sistema modela una pequeña distribuidora de cervezas:
 - El JWT tiene `expiresIn: '1h'`.
 - No hay refresh tokens.
 - El frontend mantiene la sesión en `localStorage` (`token`, `user`).
-- Si el token expira, el frontend **no lo detecta automáticamente**: las peticiones al backend van a fallar (cuando el backend valide JWT, hoy no lo hace).
+- Si el token expira, el frontend **no lo detecta automáticamente**: las peticiones al backend fallan con **401** (el backend ahora valida el JWT en `verifyToken` — corregido en commit 5f8172e, 2026-06-17).
 - `logout` limpia `localStorage` y redirige a `/login`.
 
 ---
@@ -235,14 +257,14 @@ El sistema modela una pequeña distribuidora de cervezas:
 
 | Caso | Comportamiento actual | Comentario |
 |---|---|---|
-| Email con espacios o mayúsculas distinto a la fila guardada | `findOne({email})` es case-sensitive, no normaliza | Debería hacerse `.toLowerCase().trim()` antes de comparar y de guardar |
-| `cantidad: 0` o `cantidad: -1` en pedido | No se valida; entra al sistema y descuenta `0` o **suma** stock (porque `$inc: -(-1) = +1`) | Validar `cantidad > 0` y entero |
+| Email con espacios o mayúsculas distinto a la fila guardada | ⚠️ Pendiente: `findOne({email})` sigue siendo case-sensitive, no normaliza | Debería hacerse `.toLowerCase().trim()` antes de comparar y de guardar |
+| `cantidad: 0` o `cantidad: -1` en pedido | ✅ Corregido (commit 5f8172e): el controller exige `Number.isInteger(cantidad) && cantidad > 0`; se rechaza con 400 antes de tocar stock | Resuelto |
 | `cervezas: []` en pedido | Rechazado (`length === 0`) | OK |
-| Pedido referenciando una cerveza eliminada | El pedido queda con un ID huérfano (no hay FK real en Mongo) | Sin populate falla silencioso; con populate devolvería `null` |
-| Usuario inactivo intentando crear pedido | El back **no chequea `activo`** en `/pedido`. Solo el login valida. | Hoy basta con tener un token (cuando se implemente la auth en el back) o con saberse un `usuario_id` válido |
-| Cliente intentando pedir a nombre de otro usuario | Pasa: el `usuario_id` viene en el body y no se compara con la sesión | Debe derivarse del JWT |
-| Modificar `_id` o `email` vía `PATCH /api/usuarios/:id` | No filtra el body; Mongoose probablemente ignore `_id` pero `email` sí cambiaría | Whitelist explícita de campos |
-| Doble click en "crear pedido" desde el frontend | Se enviarían dos requests; sin idempotencia se crean dos pedidos | Debounce/loader en el componente |
+| Pedido referenciando una cerveza eliminada | ⚠️ Pendiente: el pedido queda con un ID huérfano (no hay FK real en Mongo) | Sin populate falla silencioso; con populate (ref ya corregido) devolvería `null` |
+| Usuario inactivo intentando crear pedido | ⚠️ Pendiente: `/pedido` valida el token y el rol `cliente`, pero **no rechequea `activo`**. Solo el login valida `activo`. | Un cliente desactivado tras emitir su token (vigente 1h) aún puede crear pedidos hasta que expire. Debería revalidarse `activo` en `verifyToken` o al crear pedido |
+| Cliente intentando pedir a nombre de otro usuario | ✅ Corregido (commit 5f8172e): el `usuario_id` se deriva del JWT (`req.user._id`), ya no se lee del body | Resuelto |
+| Modificar `_id`, `email` o `password` vía `PATCH /api/usuarios/:id` | ✅ Corregido (commit 5f8172e): `updateUsuarioService` aplica una **whitelist** (`nombre`, `email`, `rol`, `activo`); cualquier otro campo del body se descarta | Resuelto (el endpoint además ya exige rol `admin`) |
+| Doble click en "crear pedido" desde el frontend | ⚠️ Pendiente: se enviarían dos requests; sin idempotencia se crean dos pedidos | Debounce/loader en el componente |
 
 ---
 
