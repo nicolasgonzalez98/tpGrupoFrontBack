@@ -5,6 +5,9 @@ Trabajo práctico que implementa un sistema de gestión de stock de cervezas y p
 > Documentación complementaria:
 > - [Arquitectura](architecture/ARCHITECTURE.md)
 > - [Reglas de negocio](business/BUSINESS_RULES.md)
+> - [API / Endpoints](api/README.md)
+> - [Modelo de datos](database/README.md)
+> - [Seguridad](security/README.md)
 
 ---
 

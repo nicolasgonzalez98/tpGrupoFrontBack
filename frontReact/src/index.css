@@ -1,0 +1,3 @@
+/* Estilos globales. Equivalente a frontEnd/src/styles.css del proyecto Angular. */
+@import "tailwindcss";
+@import "primeicons/primeicons.css";

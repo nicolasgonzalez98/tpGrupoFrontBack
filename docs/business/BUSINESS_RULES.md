@@ -99,10 +99,12 @@ El sistema modela una pequeña distribuidora de cervezas:
 - No hay validación de longitud ni complejidad de password (huella de deuda técnica).
 
 #### Login (`POST /api/auth/login`)
-- Si el usuario no existe → 404 (revela existencia, enumerar usuarios es posible).
-- Si `activo === false` → 404 (mensaje: "El usuario no esta activo").
-- Si password no coincide → 401.
+- Si el usuario no existe → el service lanza error con `status 404` (revela existencia, enumerar usuarios es posible).
+- Si `activo === false` → el service lanza error con `status 404` (mensaje: "El usuario no esta activo").
+- Si password no coincide → el service lanza error con `status 401`.
 - Si todo OK, se emite JWT firmado con payload `{_id, rol}` y `expiresIn: '1h'`.
+
+> ⚠️ **Código vs. intención**: el `authController.login` hace `res.status(500)` fijo en el `catch` ([authController.js:16-18](../../backEnd/controllers/authController.js#L16-L18)) e **ignora `error.status`**. Por lo tanto, todos los fallos de login (usuario inexistente, inactivo o password incorrecta) devuelven **HTTP 500** al cliente, aunque el service distinga 404/401 internamente. El mensaje sí refleja el caso. Corrección sugerida: replicar el patrón de `register` (`res.status(error.status || 500)`). Ver [docs/api §3.2](../api/README.md#32-post-apiauthlogin).
 
 #### Activar/desactivar y cambiar rol (`PATCH /api/usuarios/:id`)
 - El admin puede setear `activo: true/false` y/o cambiar el `rol`.

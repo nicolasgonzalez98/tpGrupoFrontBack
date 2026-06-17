@@ -1,0 +1,15 @@
+// Equivalente a frontEnd/src/app/models/usuario.models.ts
+export interface IUsuario {
+  _id: string;
+  nombre: string;
+  email: string;
+  password?: string;
+  rol: Rol;
+  activo: boolean;
+}
+
+export enum Rol {
+  Admin = 'admin',
+  Empleado = 'empleado',
+  Cliente = 'cliente',
+}

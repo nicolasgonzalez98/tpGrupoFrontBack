@@ -40,3 +40,4 @@ Cada archivo debería contener al menos:
 | # | Etapa | Tema | Archivo |
 |---|---|---|---|
 | 01 | 1 | Análisis general del proyecto | [01-etapa1-analisis-general.md](01-etapa1-analisis-general.md) |
+| 02 | 2 | Documentación de API y modelo de datos | [02-etapa2-documentacion-api-modelo-datos.md](02-etapa2-documentacion-api-modelo-datos.md) |
