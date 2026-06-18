@@ -4,6 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Button } from 'primereact/button';
 import { useAuth } from '../context/AuthContext';
+import * as usuarioService from '../services/usuarioService';
 
 /**
  * Equivalente a register.component (Angular). Se usa en:
@@ -42,15 +43,15 @@ export default function Register() {
     if (formInvalid) return;
 
     setErrorMessage('');
-    const payload = {
-      nombre,
-      email,
-      password,
-      ...(isAdminCreatingEmployee ? { rol: 'empleado' } : {}),
-    };
 
     try {
-      await register(payload);
+      if (isAdminCreatingEmployee) {
+        // Alta de empleado por el endpoint admin (el backend fija rol='empleado').
+        await usuarioService.createEmpleado({ nombre, email, password });
+      } else {
+        // Registro público: el backend siempre crea un cliente.
+        await register({ nombre, email, password });
+      }
       setNombre('');
       setEmail('');
       setPassword('');

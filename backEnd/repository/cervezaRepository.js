@@ -19,10 +19,14 @@ const deleteCervezaById = async (id) => {
 
 const updateCerveza = async (id, updateData) => {
   if (updateData.stock_actual !== undefined && updateData.stock_actual < 0) {
-    throw new Error('El stock_actual no puede ser negativo');
+    const error = new Error('El stock_actual no puede ser negativo');
+    error.status = 400;
+    throw error;
   }
   if (updateData.stock_minimo !== undefined && updateData.stock_minimo < 0) {
-    throw new Error('El stock_minimo no puede ser negativo');
+    const error = new Error('El stock_minimo no puede ser negativo');
+    error.status = 400;
+    throw error;
   }
 
   return await Cerveza.findByIdAndUpdate(

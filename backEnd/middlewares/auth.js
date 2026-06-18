@@ -1,7 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-// Secret desde entorno con fallback (evita el secret hardcodeado suelto en el código).
-const SECRET_KEY = process.env.JWT_SECRET || 'TpCervezas';
+// Secret SIEMPRE desde entorno. Sin fallback: si falta, el proceso aborta al arrancar
+// (fail-fast) para evitar firmar/verificar JWT con un secreto público y predecible.
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+  throw new Error('JWT_SECRET no está definido. Configurá la variable de entorno antes de iniciar.');
+}
 
 // Verifica el JWT del header Authorization: Bearer <token>.
 // Si es válido, deja { _id, rol } en req.user. Si no, corta con 401.

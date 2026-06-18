@@ -12,3 +12,9 @@ export function getUsuarios(): Promise<IUsuario[]> {
 export function updateUsuario(id: string, partialData: Partial<IUsuario>): Promise<IUsuario> {
   return axios.patch<IUsuario>(`${apiUrl}/${id}`, partialData).then((r) => r.data);
 }
+
+// Alta de empleado: usa el endpoint admin (POST /api/usuarios), que fija rol='empleado'
+// en el backend. NO se usa /api/auth/register, que es público y solo crea clientes.
+export function createEmpleado(data: { nombre: string; email: string; password: string }): Promise<IUsuario> {
+  return axios.post<IUsuario>(apiUrl, data).then((r) => r.data);
+}

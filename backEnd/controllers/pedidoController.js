@@ -46,6 +46,10 @@ const getPedidoById = async (req, res) => {
     if (!pedido) {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
+    // Anti-IDOR: un cliente solo puede ver sus propios pedidos.
+    if (req.user.rol === 'cliente' && String(pedido.usuario_id) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'No tenés permisos para ver este pedido' });
+    }
     res.status(200).json(pedido);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -57,6 +61,10 @@ const getPedidosByUsuario = async (req, res) => {
     const { usuarioId } = req.params;
     if (!usuarioId) {
       return res.status(400).json({ error: 'ID de usuario requerido' });
+    }
+    // Anti-IDOR: un cliente solo puede consultar sus propios pedidos.
+    if (req.user.rol === 'cliente' && String(usuarioId) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'No tenés permisos para ver estos pedidos' });
     }
     const pedidos = await pedidoService.getPedidosByUsuario(usuarioId);
     res.status(200).json(pedidos);
@@ -82,7 +90,9 @@ const deletePedidoById = async (req, res) => {
 
 const updatePedido = async (req, res) => {
   try {
-    const { aprobado_por, estado } = req.body;
+    const { estado } = req.body;
+    // aprobado_por se deriva del token (quién aprueba/rechaza), no del body → trazabilidad confiable.
+    const aprobado_por = req.user._id;
     const pedidoActualizado = await pedidoService.updatePedido(req.params.id, { aprobado_por, estado });
     if (!pedidoActualizado) {
       return res.status(404).json({ error: 'Pedido no encontrado' });

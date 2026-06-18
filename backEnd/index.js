@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors')
+const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 3000;
 const connectDB = require('./database/connection');
@@ -11,9 +12,12 @@ const pedidoRoutes = require('./routes/pedidoRoutes');
 
 const usuarioRouter = require('./routes/adminUsuarioRoutes'); 
 
+// Cabeceras de seguridad (X-Content-Type-Options, X-Frame-Options, HSTS, etc.).
+app.use(helmet());
 // CORS restringido a orígenes locales (antes estaba totalmente abierto).
 app.use(cors({ origin: [/^http:\/\/localhost:\d+$/] }));
-app.use(express.json());
+// Límite de tamaño del body para evitar payloads abusivos.
+app.use(express.json({ limit: '100kb' }));
 connectDB();
 
 
@@ -27,6 +31,20 @@ app.use('/pedido', pedidoRoutes);
 
 app.use('/', cervezaRoutes);
 
+
+// Manejo centralizado de errores. Debe ir DESPUÉS de las rutas y tener 4 argumentos.
+// - JSON malformado (body-parser) → 400 limpio, sin volcar el stack trace al cliente.
+// - Cualquier otro error no controlado → 500 genérico. El detalle queda solo en el log.
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ message: 'JSON inválido en el cuerpo de la petición' });
+  }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'El cuerpo de la petición es demasiado grande' });
+  }
+  console.error('Error no controlado:', err);
+  res.status(err.status || 500).json({ message: 'Error interno del servidor' });
+});
 
 app.listen(port, () => {
   console.log(`Servidor escuchando en http://localhost:${port}`);

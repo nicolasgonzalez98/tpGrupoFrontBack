@@ -11,7 +11,7 @@ exports.createEmpleadoService = async ({ nombre, email, password }) => {
             throw error;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         const empleadoData = {
             nombre,
@@ -21,7 +21,9 @@ exports.createEmpleadoService = async ({ nombre, email, password }) => {
         };
 
         const nuevoEmpleado = await adminUsuarioRepository.createEmpleado(empleadoData);
-        return nuevoEmpleado;
+        // No devolver el hash de la contraseña al cliente.
+        const { password: _omit, ...empleadoSinPassword } = nuevoEmpleado.toObject();
+        return empleadoSinPassword;
     } catch (error) {
         console.error("Error en createEmpleadoService:", error.message);
         throw error;

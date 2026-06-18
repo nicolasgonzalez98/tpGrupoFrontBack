@@ -24,7 +24,9 @@ const createCerveza = async (req, res) => {
         const cerveza = await cervezaService.createCerveza(cervezaData);
         res.status(201).json(cerveza);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error("Error en createCerveza:", error);
+        const status = error.status || 500;
+        res.status(status).json({ error: status === 500 ? 'Error interno del servidor' : error.message });
     }
 };
 
@@ -33,7 +35,8 @@ const getAllCervezas = async (req, res) => {
         const cervezas = await cervezaService.getAllCervezas();
         res.status(200).json(cervezas);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en getAllCervezas:", error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
@@ -45,7 +48,8 @@ const getCervezaById = async (req, res) => {
         }
         res.status(200).json(cerveza);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en getCervezaById:", error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
@@ -57,7 +61,8 @@ const deleteCervezaById = async (req, res) => {
         }
         res.status(200).json({ message: "Cerveza eliminada correctamente" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en deleteCervezaById:", error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
@@ -83,7 +88,10 @@ const updateCerveza = async (req, res) => {
         }
         res.status(200).json(cervezaActualizada);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en updateCerveza:", error);
+        // Errores de validación (status 400) muestran su mensaje; el resto es genérico.
+        const status = error.status || 500;
+        res.status(status).json({ error: status === 500 ? 'Error interno del servidor' : error.message });
     }
 };
 
