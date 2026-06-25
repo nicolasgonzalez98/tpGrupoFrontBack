@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy AWS — Cómo lo hicimos (Cervezas)</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --card2:#222633; --line:#2e3344;
+    --txt:#e6e8ee; --mut:#9aa3b2; --accent:#ff9b3d; --accent2:#7c5cff;
+    --ok:#3ecf8e; --warn:#ffcc4d; --danger:#ff5d6c; --code:#0b0d13;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;font-size:16px}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px}
+  h2{font-size:1.3rem;margin:0;color:#fff}
+  h3{font-size:1.02rem;margin:20px 0 8px;color:#fff}
+  p{margin:10px 0}
+  .sub{color:var(--mut);margin:0 0 22px}
+  .ok-banner{background:linear-gradient(90deg,#16321f,#13262e);border:1px solid #245a3a;
+    border-radius:12px;padding:14px 18px;margin:0 0 24px;font-size:.95rem}
+  .ok-banner b{color:var(--ok)}
+  .arch{background:var(--code);border:1px solid var(--line);border-radius:12px;
+    padding:18px;margin:0 0 16px;overflow-x:auto}
+  .arch pre{margin:0;color:#cfd6e4;font-size:.82rem;white-space:pre}
+  .pivot{border-left:3px solid var(--danger);background:#2a1418;padding:8px 14px;border-radius:0 8px 8px 0;margin:14px 0;font-size:.92rem}
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 16px;overflow:hidden}
+  .phead{display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--card2);border-bottom:1px solid var(--line)}
+  .pnum{flex:0 0 auto;width:32px;height:32px;border-radius:9px;background:var(--accent);color:#1a1207;font-weight:800;display:grid;place-items:center}
+  .pbody{padding:8px 20px 18px}
+  .where{font-size:.74rem;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  ol{margin:8px 0;padding-left:22px} ol li{margin:6px 0}
+  ul{margin:8px 0;padding-left:20px}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:"SF Mono",Consolas,Menlo,monospace;font-size:.85em;color:#ffd7a8}
+  pre.cmd{background:var(--code);border:1px solid var(--line);border-radius:9px;padding:12px 14px;overflow-x:auto;margin:10px 0}
+  pre.cmd code{background:none;border:none;padding:0;color:#bfe6cf;font-size:.8rem;white-space:pre}
+  .note{border-left:3px solid var(--accent2);background:#1c1b2e;padding:8px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:.9rem}
+  .cost{border-left:3px solid var(--warn);background:#2a2412;padding:8px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:.9rem}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.86rem}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600}
+  td.n{color:var(--danger);font-weight:700;text-align:center}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+  .chip{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:.8rem;color:var(--mut)}
+  .teardown{background:linear-gradient(180deg,#2a1418,#1a1d27);border:1px solid #5a2730;border-radius:14px;padding:6px 22px 18px;margin-top:28px}
+  .teardown h2{color:var(--danger)}
+  hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+  .small{font-size:.84rem;color:var(--mut)}
+  .scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<h1>🍺 Deploy en AWS — Cómo lo hicimos</h1>
+<p class="sub">Proyecto Cervezas · paso a paso real, con comandos y los problemas que resolvimos</p>
+
+<div class="meta">
+  <span class="chip">AWS Academy Learner Lab</span>
+  <span class="chip">Región us-east-1</span>
+  <span class="chip">Todo por CloudShell (CLI)</span>
+  <span class="chip">MongoDB Atlas</span>
+</div>
+
+<div class="ok-banner"><b>✅ Resultado:</b> front en Amplify hablando con el back por HTTPS, login funcionando punta a punta.</div>
+
+<h3>Arquitectura final</h3>
+<div class="arch">
+<pre>Cliente → Amplify (HTTPS) → API Gateway (HTTPS) → ALB (subnet pública) → EC2 (subnet privada) → MongoDB Atlas</pre>
+</div>
+<div class="pivot"><b>⚠️ Desvío importante:</b> el plan original usaba <b>CloudFront</b> para el HTTPS, pero el Learner Lab lo <b>bloquea</b> (<code>AccessDenied</code>). Lo reemplazamos por <b>API Gateway</b>, que también da HTTPS gratis sin dominio y sí está permitido.</div>
+
+<div class="note">
+  <b>Por qué CloudShell:</b> trae el AWS CLI ya instalado y usa las credenciales de la sesión → no se instala ni configura nada. <b>Por qué Mongo Atlas:</b> evitamos reescribir el back (no migramos a DynamoDB). <b>IAM:</b> en Learner Lab no se crean roles, la EC2 usa el perfil pre-existente <code>LabInstanceProfile</code> para entrar por SSM.
+</div>
+
+<div class="phase"><div class="phead"><div class="pnum">0</div><div><div class="where">CloudShell</div><h2>Abrir la terminal</h2></div></div>
+<div class="pbody">
+<p>Consola AWS → ícono de terminal <code>&gt;_</code> arriba a la derecha. Verificar:</p>
+<pre class="cmd"><code>aws sts get-caller-identity &amp;&amp; aws configure get region</code></pre>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">1</div><div><div class="where">VPC</div><h2>Red: VPC + subnets + NAT</h2></div></div>
+<div class="pbody">
+<p>Crea VPC, Internet Gateway, 2 subnets públicas + 2 privadas, NAT Gateway y route tables, y guarda los IDs en <code>~/cervezas-ids.sh</code>.</p>
+<div class="scroll"><pre class="cmd"><code>export AWS_DEFAULT_REGION=us-east-1
+REGION=us-east-1; TAG=cervezas; set -e
+
+VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
+aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-hostnames
+aws ec2 modify-vpc-attribute --vpc-id $VPC_ID --enable-dns-support
+
+IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
+
+PUB1=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24  --availability-zone ${REGION}a --query 'Subnet.SubnetId' --output text)
+PUB2=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.2.0/24  --availability-zone ${REGION}b --query 'Subnet.SubnetId' --output text)
+PRIV1=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.11.0/24 --availability-zone ${REGION}a --query 'Subnet.SubnetId' --output text)
+PRIV2=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.12.0/24 --availability-zone ${REGION}b --query 'Subnet.SubnetId' --output text)
+aws ec2 modify-subnet-attribute --subnet-id $PUB1 --map-public-ip-on-launch
+aws ec2 modify-subnet-attribute --subnet-id $PUB2 --map-public-ip-on-launch
+
+EIP_ALLOC=$(aws ec2 allocate-address --domain vpc --query 'AllocationId' --output text)
+NAT_ID=$(aws ec2 create-nat-gateway --subnet-id $PUB1 --allocation-id $EIP_ALLOC --query 'NatGateway.NatGatewayId' --output text)
+aws ec2 wait nat-gateway-available --nat-gateway-ids $NAT_ID
+
+RT_PUB=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+aws ec2 create-route --route-table-id $RT_PUB --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+aws ec2 associate-route-table --route-table-id $RT_PUB --subnet-id $PUB1
+aws ec2 associate-route-table --route-table-id $RT_PUB --subnet-id $PUB2
+
+RT_PRIV=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+aws ec2 create-route --route-table-id $RT_PRIV --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT_ID
+aws ec2 associate-route-table --route-table-id $RT_PRIV --subnet-id $PRIV1
+aws ec2 associate-route-table --route-table-id $RT_PRIV --subnet-id $PRIV2
+
+cat &gt; ~/cervezas-ids.sh &lt;&lt;EOF
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_PAGER=""
+export TAG=cervezas
+export VPC_ID=$VPC_ID IGW_ID=$IGW_ID
+export PUB1=$PUB1 PUB2=$PUB2 PRIV1=$PRIV1 PRIV2=$PRIV2
+export EIP_ALLOC=$EIP_ALLOC NAT_ID=$NAT_ID
+export RT_PUB=$RT_PUB RT_PRIV=$RT_PRIV
+EOF
+echo "FASE 1 OK"</code></pre></div>
+<div class="cost">Desde que se crea el <b>NAT Gateway</b> empieza el costo (~$1/día).</div>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">2</div><div><div class="where">EC2 → Security Groups</div><h2>Firewalls</h2></div></div>
+<div class="pbody">
+<div class="scroll"><pre class="cmd"><code>source ~/cervezas-ids.sh
+# ALB: HTTP 80 desde internet
+ALB_SG=$(aws ec2 create-security-group --group-name $TAG-alb-sg --description "ALB" --vpc-id $VPC_ID --query 'GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $ALB_SG --protocol tcp --port 80 --cidr 0.0.0.0/0
+# EC2: puerto 3000 SOLO desde el SG del ALB
+EC2_SG=$(aws ec2 create-security-group --group-name $TAG-ec2-sg --description "EC2" --vpc-id $VPC_ID --query 'GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $EC2_SG --protocol tcp --port 3000 --source-group $ALB_SG
+echo "export ALB_SG=$ALB_SG" &gt;&gt; ~/cervezas-ids.sh
+echo "export EC2_SG=$EC2_SG" &gt;&gt; ~/cervezas-ids.sh</code></pre></div>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">3</div><div><div class="where">EC2 + SSM</div><h2>Instancia privada + el back</h2></div></div>
+<div class="pbody">
+<h3>3A · Lanzar la EC2 (CloudShell)</h3>
+<div class="scroll"><pre class="cmd"><code>source ~/cervezas-ids.sh
+AMI_ID=$(aws ssm get-parameters --names /aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id --query 'Parameters[0].Value' --output text)
+INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type t3.micro \
+  --subnet-id $PRIV1 --security-group-ids $EC2_SG --iam-instance-profile Name=LabInstanceProfile \
+  --query 'Instances[0].InstanceId' --output text)
+echo "export AMI_ID=$AMI_ID"          &gt;&gt; ~/cervezas-ids.sh
+echo "export INSTANCE_ID=$INSTANCE_ID" &gt;&gt; ~/cervezas-ids.sh
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID</code></pre></div>
+<h3>3B · IP del NAT en MongoDB Atlas</h3>
+<pre class="cmd"><code>aws ec2 describe-addresses --allocation-ids $EIP_ALLOC --query 'Addresses[0].PublicIp' --output text</code></pre>
+<p>Agregar esa IP en <b>Atlas → Network Access</b> (o <code>0.0.0.0/0</code>). Sin esto el back no conecta.</p>
+<h3>3C · Entrar y montar el back</h3>
+<pre class="cmd"><code>aws ssm start-session --target $INSTANCE_ID   # entra como ssm-user
+sudo su - ubuntu                              # pasar a usuario ubuntu</code></pre>
+<p>Ya como <code>ubuntu</code>, <b>de a una línea</b>:</p>
+<div class="scroll"><pre class="cmd"><code>sudo apt-get update -y
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs git && sudo npm install -g pm2
+cd ~ && git clone https://github.com/nicolasgonzalez98/tpGrupoFrontBack.git
+cd ~/tpGrupoFrontBack/backEnd && npm install
+nano .env          # PORT=3000, DB_USER, DB_PASSWORD, JWT_SECRET
+pm2 start index.js --name backend && pm2 save && pm2 startup
+curl http://localhost:3000/stock   # {"message":"Token no provisto"} = OK</code></pre></div>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">4</div><div><div class="where">EC2 → Load Balancing</div><h2>Application Load Balancer</h2></div></div>
+<div class="pbody">
+<div class="scroll"><pre class="cmd"><code>source ~/cervezas-ids.sh
+TG_ARN=$(aws elbv2 create-target-group --name $TAG-tg --protocol HTTP --port 3000 \
+  --vpc-id $VPC_ID --target-type instance --health-check-path / --matcher HttpCode=200-499 \
+  --query 'TargetGroups[0].TargetGroupArn' --output text)
+aws elbv2 register-targets --target-group-arn $TG_ARN --targets Id=$INSTANCE_ID
+ALB_ARN=$(aws elbv2 create-load-balancer --name $TAG-alb --type application --scheme internet-facing \
+  --subnets $PUB1 $PUB2 --security-groups $ALB_SG --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+aws elbv2 wait load-balancer-available --load-balancer-arns $ALB_ARN
+aws elbv2 create-listener --load-balancer-arn $ALB_ARN --protocol HTTP --port 80 \
+  --default-actions Type=forward,TargetGroupArn=$TG_ARN
+ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns $ALB_ARN --query 'LoadBalancers[0].DNSName' --output text)
+echo "export TG_ARN=$TG_ARN"   &gt;&gt; ~/cervezas-ids.sh
+echo "export ALB_ARN=$ALB_ARN" &gt;&gt; ~/cervezas-ids.sh
+echo "export ALB_DNS=$ALB_DNS" &gt;&gt; ~/cervezas-ids.sh
+sleep 40; curl -s http://$ALB_DNS/stock   # ALB->EC2 OK</code></pre></div>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">5</div><div><div class="where">API Gateway</div><h2>HTTPS (CloudFront falló)</h2></div></div>
+<div class="pbody">
+<div class="pivot">Intentamos CloudFront → <code>AccessDenied</code>. El Learner Lab no lo permite. Solución: <b>API Gateway</b>.</div>
+<div class="scroll"><pre class="cmd"><code>source ~/cervezas-ids.sh
+API_OUT=$(aws apigatewayv2 create-api --name cervezas-api --protocol-type HTTP \
+  --target http://$ALB_DNS --query '[ApiId,ApiEndpoint]' --output text)
+API_ID=$(echo $API_OUT | awk '{print $1}')
+API_ENDPOINT=$(echo $API_OUT | awk '{print $2}')
+echo "export API_ID=$API_ID"             &gt;&gt; ~/cervezas-ids.sh
+echo "export API_ENDPOINT=$API_ENDPOINT" &gt;&gt; ~/cervezas-ids.sh
+curl -s $API_ENDPOINT/stock   # {"message":"Token no provisto"} por HTTPS = OK</code></pre></div>
+<p>Devuelve <code>https://xxxx.execute-api.us-east-1.amazonaws.com</code> → <b>el endpoint HTTPS que usa el front.</b></p>
+</div></div>
+
+<div class="phase"><div class="phead"><div class="pnum">6</div><div><div class="where">Código: back + front</div><h2>Conectar el front</h2></div></div>
+<div class="pbody">
+<h3>Front → API Gateway · <code>frontReact/src/services/config.ts</code></h3>
+<pre class="cmd"><code>export const API_URL = 'https://xxxx.execute-api.us-east-1.amazonaws.com';</code></pre>
+<h3>CORS en el back · <code>backEnd/index.js</code> (editado en la EC2 + <code>pm2 restart backend</code>)</h3>
+<pre class="cmd"><code>app.use(cors({ origin: [/^http:\/\/localhost:\d+$/, /^https:\/\/[a-z0-9.-]+\.amplifyapp\.com$/] }));</code></pre>
+<p class="small">Usamos un patrón <code>*.amplifyapp.com</code> porque el dominio de Amplify cambia de ID al redeployar (ver problema #8).</p>
+<h3>Compilar y subir</h3>
+<pre class="cmd"><code>cd frontReact && npm run build   # genera dist/</code></pre>
+<p>Subir la carpeta <b>dist</b> a Amplify por <b>drag-and-drop</b> → probar el login ✅</p>
+</div></div>
+
+<h2 style="margin-top:30px">🐞 Problemas que tuvimos y cómo los resolvimos</h2>
+<div class="scroll">
+<table>
+<tr><th>#</th><th>Síntoma</th><th>Causa</th><th>Solución</th></tr>
+<tr><td class="n">1</td><td>"Apareció un editor" tras un comando</td><td>El AWS CLI v2 abre la salida en el visor <code>less</code></td><td>Salir con <code>q</code>; <code>export AWS_PAGER=""</code></td></tr>
+<tr><td class="n">2</td><td>Al pegar un bloque, solo corría la 1ª línea</td><td>La terminal SSM se traga líneas al pegar varias</td><td>Pegar <b>de a una línea</b></td></tr>
+<tr><td class="n">3</td><td><code>Permission denied</code> en <code>/home/ubuntu</code></td><td>SSM entra como <code>ssm-user</code></td><td><code>sudo su - ubuntu</code></td></tr>
+<tr><td class="n">4</td><td>El <code>git clone</code> no dejaba carpeta</td><td>Repo privado pedía credenciales</td><td>Clonar con token <code>https://TOKEN@github.com/...</code></td></tr>
+<tr><td class="n">5</td><td><code>git push</code>: "Password authentication is not supported"</td><td>GitHub ya no acepta contraseña</td><td>Personal Access Token (o editar el back directo en la EC2)</td></tr>
+<tr><td class="n">6</td><td><code>npm run build</code>: "Cannot find native binding"</td><td>Node 18 local; Tailwind v4 exige Node ≥ 20 → npm saltea el binding</td><td><code>npm i @tailwindcss/oxide-win32-x64-msvc@4.3.1 --no-save</code> (ideal: Node 20+)</td></tr>
+<tr><td class="n">7</td><td><code>cloudfront:CreateDistribution</code> → <code>AccessDenied</code></td><td>Learner Lab bloquea CloudFront</td><td>Usar <b>API Gateway</b> para el HTTPS</td></tr>
+<tr><td class="n">8</td><td>Login: <code>No 'Access-Control-Allow-Origin'</code></td><td>El dominio de Amplify cambió de ID; el CORS apuntaba al viejo</td><td>CORS con patrón <code>*.amplifyapp.com</code></td></tr>
+</table>
+</div>
+
+<div class="phase" style="margin-top:30px"><div class="phead"><div class="pnum">🔁</div><div><div class="where">Carpeta scripts/</div><h2>Scripts: apagar y encender</h2></div></div>
+<div class="pbody">
+<p>Dejamos dos scripts que automatizan el ciclo de ahorro (re-descubren los recursos por nombre/tag, funcionan aunque se pierda <code>~/cervezas-ids.sh</code>):</p>
+<table>
+<tr><th>Script</th><th>Qué hace</th></tr>
+<tr><td><code>scripts/aws-apagar.sh</code></td><td>Borra <b>API Gateway + ALB + NAT</b>, libera la Elastic IP y <b>detiene</b> la EC2. Gasto por hora a cero.</td></tr>
+<tr><td><code>scripts/aws-encender.sh</code></td><td><b>Recrea</b> NAT + ALB + API Gateway y <b>enciende</b> la EC2. Imprime la <b>URL nueva</b> del API Gateway y la <b>IP nueva</b> del NAT.</td></tr>
+</table>
+<h3>Usarlos en CloudShell</h3>
+<pre class="cmd"><code># Subir con: Actions -> Upload file  (o pegar el contenido con nano)
+bash aws-apagar.sh      # al terminar de trabajar
+bash aws-encender.sh    # al volver</code></pre>
+<div class="cost"><b>Al ENCENDER siempre hay 3 pendientes</b> (porque ALB y API Gateway cambian de URL): 1) poner la <b>IP del NAT</b> en Atlas → Network Access; 2) actualizar <code>config.ts</code> con la <b>URL nueva</b> + <code>npm run build</code> + drag-drop a Amplify; 3) probar con <code>curl &lt;URL_API&gt;/stock</code>.</div>
+<h3>Verificar que quedó apagado</h3>
+<div class="scroll"><pre class="cmd"><code>export AWS_DEFAULT_REGION=us-east-1; export AWS_PAGER=""
+aws ec2 describe-nat-gateways --filter "Name=state,Values=available,pending" --query 'NatGateways[].NatGatewayId' --output text   # vacío = OK
+aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerName' --output text                                       # vacío = OK
+aws ec2 describe-addresses --query 'Addresses[].PublicIp' --output text                                                          # vacío = OK
+aws ec2 describe-instances --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text                            # stopped</code></pre></div>
+</div></div>
+
+<div class="teardown">
+<h2>🧨 Teardown manual — borrar para no gastar</h2>
+<div class="scroll"><pre class="cmd"><code>source ~/cervezas-ids.sh
+aws apigatewayv2 delete-api --api-id $API_ID
+aws elbv2 delete-load-balancer --load-balancer-arn $ALB_ARN; sleep 30
+aws elbv2 delete-target-group --target-group-arn $TG_ARN
+aws ec2 delete-nat-gateway --nat-gateway-id $NAT_ID
+aws ec2 wait nat-gateway-deleted --nat-gateway-ids $NAT_ID
+aws ec2 release-address --allocation-id $EIP_ALLOC
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID</code></pre></div>
+<div class="cost"><b>Mínimo para frenar el gasto:</b> borrar API Gateway + ALB + NAT y <b>detener</b> (stop) la EC2. <b>Ojo:</b> al recrear, el API Gateway y el ALB cambian de URL → actualizar <code>config.ts</code> y recompilar el front.</div>
+</div>
+
+<hr>
+<p class="small">AWS Academy Learner Lab · región us-east-1 · todo por CloudShell (CLI).</p>
+
+</div>
+</body>
+</html>

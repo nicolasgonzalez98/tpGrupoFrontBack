@@ -14,8 +14,9 @@ const usuarioRouter = require('./routes/adminUsuarioRoutes');
 
 // Cabeceras de seguridad (X-Content-Type-Options, X-Frame-Options, HSTS, etc.).
 app.use(helmet());
-// CORS restringido: orígenes locales (dev) + el front desplegado en Amplify.
-app.use(cors({ origin: [/^http:\/\/localhost:\d+$/, 'https://staging.d37k6pke0l4gxu.amplifyapp.com'] }));
+// CORS restringido: orígenes locales (dev) + cualquier front desplegado en Amplify
+// (el dominio de Amplify cambia con cada app/deploy, por eso usamos un patrón).
+app.use(cors({ origin: [/^http:\/\/localhost:\d+$/, /^https:\/\/[a-z0-9.-]+\.amplifyapp\.com$/] }));
 // Límite de tamaño del body para evitar payloads abusivos.
 app.use(express.json({ limit: '100kb' }));
 connectDB();
