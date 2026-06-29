@@ -4,7 +4,8 @@ const cors = require('cors')
 const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 3000;
-const connectDB = require('./database/connection');
+// Persistencia en DynamoDB (AWS SDK v3). No requiere "conectar": el cliente
+// usa el rol de la EC2 y la región del entorno. Ver database/dynamoClient.js.
 const authRoutes = require('./routes/authRoutes');
 const cervezaRoutes = require('./routes/cervezaRoutes');
 const stockRoutes = require('./routes/stockRoutes');
@@ -19,7 +20,6 @@ app.use(helmet());
 app.use(cors({ origin: [/^http:\/\/localhost:\d+$/, /^https:\/\/[a-z0-9.-]+\.amplifyapp\.com$/] }));
 // Límite de tamaño del body para evitar payloads abusivos.
 app.use(express.json({ limit: '100kb' }));
-connectDB();
 
 
 app.use('/api/auth', authRoutes);
